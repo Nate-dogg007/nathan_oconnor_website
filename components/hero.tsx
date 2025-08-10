@@ -1,76 +1,54 @@
 // components/hero.tsx
 'use client'
 
-import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import Image from 'next/image'
 
-type HeroProps = {
-  eyebrow?: string
-  title?: string
-  subtitle?: string
-  primaryLabel?: string
-  primaryHref?: string        // e.g. '/contact' or 'mailto:you@example.com'
-  scrollTargetId?: string     // e.g. 'contact'
-  className?: string
-}
-
-export default function Hero({
-  eyebrow = 'Privacy‑First. Performance‑Driven.',
-  title = 'Nathan O’Connor',
-  subtitle = 'I help businesses scale with performance marketing, smart automation, and AI‑powered systems — built with privacy at the core.',
-  primaryLabel = 'Let’s talk',
-  primaryHref,
-  scrollTargetId = 'contact',
-  className,
-}: HeroProps) {
-  function handlePrimary() {
-    if (primaryHref) {
-      window.location.href = primaryHref
-      return
+export default function Hero() {
+  function scrollToForm() {
+    const formElement = document.getElementById('contact-form')
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth' })
     }
-    const el = document.getElementById(scrollTargetId)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   return (
-    <section
-      className={`relative isolate overflow-hidden bg-white py-20 sm:py-24 md:py-28 ${className ?? ''}`}
-    >
-      {/* soft gradient background */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute inset-x-0 -top-40 h-72 bg-gradient-to-b from-zinc-100 to-transparent blur-3xl" />
-        <div className="absolute inset-x-0 -bottom-40 h-72 bg-gradient-to-t from-zinc-100 to-transparent blur-3xl" />
-      </div>
-
-      <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="mb-4 inline-block rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-700">
-            {eyebrow}
+    <section className="bg-black text-white">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 py-20 sm:px-6 md:grid-cols-2 lg:px-8">
+        {/* Copy/hero text */}
+        <div>
+          <p className="mb-3 text-sm uppercase tracking-wider text-gray-300">
+            Privacy‑First. Performance‑Driven.
           </p>
 
-          <h1 className="text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl md:text-6xl">
-            {title}
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
+            Nathan O’Connor
           </h1>
 
-          <p className="mt-5 text-base leading-relaxed text-zinc-600 sm:text-lg">
-            {subtitle}
+          <p className="mt-5 max-w-xl text-gray-300">
+            I help businesses scale with performance marketing, smart automation, and AI‑powered
+            systems — all built with privacy at the core.
           </p>
 
-          <div className="mt-8 flex items-center justify-center gap-3">
-            <Button
-              onClick={handlePrimary}
-              className="group relative bg-zinc-900 text-white hover:bg-zinc-800 shadow-sm transition-transform duration-200 ease-out"
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            <button
+              type="button"
+              onClick={scrollToForm}
+              className="rounded-md bg-white px-8 py-3 text-base font-medium text-gray-900 hover:bg-gray-100"
             >
-              <span className="inline-flex items-center">
-                {primaryLabel}
-                <span className="ml-2 inline-block translate-x-0 transition-transform duration-200 group-hover:translate-x-0.5">
-                  →
-                </span>
-              </span>
-              <span className="pointer-events-none absolute inset-0 -z-10 rounded-md ring-0 ring-zinc-900/0 transition group-hover:ring-8 group-hover:ring-zinc-900/5" />
-            </Button>
+              Get Started
+            </button>
+
+            <Link
+              href="/about"
+              className="rounded-md border border-gray-500 bg-transparent px-8 py-3 text-center text-base font-medium text-white hover:bg-gray-800"
+            >
+              Learn More
+            </Link>
           </div>
         </div>
-      </div>
-    </section>
-  )
-}
+
+        {/* Optional image side (remove if not needed) */}
+        <div className="relative h-64 w-full sm:h-80 md:h-[28rem]">
+          <Image
+            src="/hero-photo.png"
