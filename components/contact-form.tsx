@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
+import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -122,81 +123,113 @@ export default function ContactForm({ className }: Props) {
 
   return (
     <section id="contact-form" className={className}>
-      <div className="container mx-auto max-w-3xl px-4">
-        <div className="rounded-lg border bg-white p-6 shadow-sm">
-          <h3 className="text-xl font-semibold text-zinc-900">Contact me</h3>
-          <p className="mt-1 text-sm text-zinc-600">I’ll get back to you as soon as possible.</p>
+      <div className="bg-[#101C3C]">
+        <div
+          className="
+            container mx-auto grid max-w-6xl grid-cols-1 gap-10 px-4 py-12
+            sm:px-6 md:grid-cols-2 md:py-16 lg:px-8
+          "
+        >
+          {/* Left column: copy */}
+          <div className="self-center text-white">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{"Ready to grow your business?"}</h2>
+            <p className="mt-2 text-white/85">
+              {"Get started today and see how my solutions can transform your business."}
+            </p>
 
-          <form onSubmit={onSubmit} className="mt-6 space-y-4">
-            {/* Honeypot (hidden) */}
-            <div className="hidden">
-              <Label htmlFor="website">Website</Label>
-              <Input
-                id="website"
-                name="website"
-                autoComplete="off"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                tabIndex={-1}
-              />
-            </div>
+            <ul className="mt-6 space-y-3">
+              {[
+                "Performance-driven marketing strategies",
+                "AI-powered workflow automation",
+                "Privacy-first data management",
+                "Personalized support",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-3">
+                  <Check className="mt-0.5 h-5 w-5 flex-none text-[#FFA64C]" />
+                  <span className="text-white/90">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  name="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
-                  required
-                />
-              </div>
-            </div>
+          {/* Right column: form card (white background) */}
+          <div className="self-center">
+            <div className="rounded-lg border border-white/10 bg-white p-6 shadow-sm">
+              <h3 className="text-xl font-semibold text-zinc-900">{"Contact me"}</h3>
+              <p className="mt-1 text-sm text-zinc-600">{"I’ll get back to you as soon as possible."}</p>
 
-            <div className="space-y-2">
-              <Label htmlFor="company">Company (optional)</Label>
-              <Input
-                id="company"
-                name="company"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                placeholder="Company Ltd"
-              />
-            </div>
+              <form onSubmit={onSubmit} className="mt-6 space-y-4">
+                {/* Honeypot (hidden) */}
+                <div className="hidden">
+                  <Label htmlFor="website">{"Website"}</Label>
+                  <Input
+                    id="website"
+                    name="website"
+                    autoComplete="off"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    tabIndex={-1}
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
-              <Textarea
-                id="message"
-                name="message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Tell me a bit about your goals..."
-                rows={5}
-                required
-              />
-            </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">{"Name"}</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your name"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">{"Email"}</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      name="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@company.com"
+                      required
+                    />
+                  </div>
+                </div>
 
-            <div className="pt-2">
-              <Button type="submit" disabled={loading} className="bg-[#FFA64C] text-[#101C3C] hover:bg-[#ff9f3a]">
-                {loading ? "Sending…" : "Send message"}
-              </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="company">{"Company (optional)"}</Label>
+                  <Input
+                    id="company"
+                    name="company"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                    placeholder="Company Ltd"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="message">{"Message"}</Label>
+                  <Textarea
+                    id="message"
+                    name="message"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Tell me a bit about your goals..."
+                    rows={5}
+                    required
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <Button type="submit" disabled={loading} className="bg-[#FFA64C] text-[#101C3C] hover:bg-[#ff9f3a]">
+                    {loading ? "Sending…" : "Send message"}
+                  </Button>
+                </div>
+              </form>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     </section>
