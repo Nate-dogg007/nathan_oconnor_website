@@ -1,11 +1,9 @@
 import Link from "next/link"
-import Image from "next/image"
-
-export default function Hero() {
+import Image from "next/image"export default function Hero() {
   const scrollToForm = () => {
-    const formElement = document.getElementById('contact-form')
+    const formElement = document.getElementById("contact-form")
     if (formElement) {
-      formElement.scrollIntoView({ behavior: 'smooth' })
+      formElement.scrollIntoView({ behavior: "smooth" })
     }
   }
 
@@ -30,7 +28,7 @@ export default function Hero() {
                 Get Started
               </button>
               <Link
-                href="/about"
+                href="/about-me"
                 className="rounded-md border border-gray-500 bg-transparent px-8 py-3 text-center text-base font-medium text-white hover:bg-gray-800"
               >
                 Learn More
