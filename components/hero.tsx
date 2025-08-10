@@ -1,4 +1,3 @@
-// components/hero.tsx
 'use client'
 
 import Link from 'next/link'
@@ -15,7 +14,7 @@ export default function Hero() {
   return (
     <section className="bg-black text-white">
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 py-20 sm:px-6 md:grid-cols-2 lg:px-8">
-        {/* Copy/hero text */}
+        {/* Text */}
         <div>
           <p className="mb-3 text-sm uppercase tracking-wider text-gray-300">
             Privacy‑First. Performance‑Driven.
@@ -48,7 +47,18 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Optional image side (remove if not needed) */}
+        {/* Image */}
         <div className="relative h-64 w-full sm:h-80 md:h-[28rem]">
           <Image
             src="/hero-photo.png"
+            alt="Nathan O’Connor"
+            fill
+            priority
+            sizes="(min-width: 1024px) 600px, 100vw"
+            className="rounded-lg object-cover"
+          />
+        </div>
+      </div>
+    </section>
+  )
+}
