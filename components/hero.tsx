@@ -1,5 +1,7 @@
 import Link from "next/link"
-import Image from "next/image"export default function Hero() {
+import Image from "next/image"
+
+export default function Hero() {
   const scrollToForm = () => {
     const formElement = document.getElementById("contact-form")
     if (formElement) {
