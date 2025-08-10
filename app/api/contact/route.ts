@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server"
 
-// Optional providers: Resend or SMTP via Nodemailer
-// Set any of these in your Vercel project to enable email delivery.
 const {
   RESEND_API_KEY,
   CONTACT_TO_EMAIL,
@@ -16,14 +14,21 @@ const {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { name, email, message, company } = body || {}
+    const { name, email, message, company, phone } = body || {}
 
     if (!name || !email || !message) {
       return NextResponse.json({ ok: false, error: "Missing fields" }, { status: 400 })
     }
 
     const subject = `New contact form message from ${name}`
-    const text = [`Name: ${name}`, `Email: ${email}`, company ? `Company: ${company}` : undefined, "", message]
+    const text = [
+      `Name: ${name}`,
+      `Email: ${email}`,
+      company ? `Company: ${company}` : undefined,
+      phone ? `Phone: ${phone}` : undefined,
+      "",
+      message,
+    ]
       .filter(Boolean)
       .join("\n")
 
@@ -32,10 +37,11 @@ export async function POST(req: Request) {
       <p><b>Name:</b> ${escapeHtml(name)}</p>
       <p><b>Email:</b> ${escapeHtml(email)}</p>
       ${company ? `<p><b>Company:</b> ${escapeHtml(company)}</p>` : ""}
+      ${phone ? `<p><b>Phone:</b> ${escapeHtml(phone)}</p>` : ""}
       <p style="white-space:pre-wrap">${escapeHtml(message)}</p>
     `
 
-    // Try Resend first
+    // Try Resend
     if (RESEND_API_KEY && CONTACT_TO_EMAIL && CONTACT_FROM_EMAIL) {
       const { Resend } = await import("resend")
       const resend = new Resend(RESEND_API_KEY)
@@ -46,14 +52,13 @@ export async function POST(req: Request) {
         text,
         html,
       })
-      // If Resend returns an error object, treat as failure
       if ((result as any)?.error) {
         return NextResponse.json({ ok: false, error: "Email provider error (Resend)" }, { status: 500 })
       }
       return NextResponse.json({ ok: true, delivered: true })
     }
 
-    // Fallback: SMTP (Nodemailer)
+    // Fallback: SMTP
     if (SMTP_HOST && SMTP_USER && SMTP_PASS && CONTACT_TO_EMAIL && CONTACT_FROM_EMAIL) {
       const nodemailer = (await import("nodemailer")).default
       const transporter = nodemailer.createTransport({
@@ -74,8 +79,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, delivered: true })
     }
 
-    // Not configured: accept the submission, report not delivered
-    console.log("Contact message (email not configured):", { name, email, message, company })
+    // Not configured: accept submission but mark not delivered
+    console.log("Contact message (email not configured):", { name, email, message, company, phone })
     return NextResponse.json({ ok: true, delivered: false, reason: "email_not_configured" })
   } catch (err) {
     console.error("Contact API error:", err)
