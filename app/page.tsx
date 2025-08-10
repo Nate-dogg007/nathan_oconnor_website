@@ -1,16 +1,20 @@
+// app/page.tsx
+import dynamic from 'next/dynamic'
+import Pillars from '@/components/pillars'
+import FAQ from '@/components/faq'
 import type { Metadata } from 'next'
 import { BASE_URL } from '@/lib/constants'
 
-const SEO_TITLE = "Nathan O'Connor — Data‑Driven, Privacy‑First Marketing & AI Consultant"
+const SEO_TITLE =
+  "Nathan O'Connor — Data‑Driven, Privacy‑First Marketing & AI Consultant"
 const SEO_DESCRIPTION =
   'I help businesses scale with performance marketing, smart automation, and AI‑powered systems, all built with privacy at the core. Unlock growth through data‑driven strategies.'
 
 export const metadata: Metadata = {
-  title: SEO_TITLE,                  // standard <title>
-  description: SEO_DESCRIPTION,      // standard <meta name="description">
+  title: SEO_TITLE,
+  description: SEO_DESCRIPTION,
   alternates: { canonical: `${BASE_URL}/` },
-
-  openGraph: {                       // social link previews (Facebook, LinkedIn, etc.)
+  openGraph: {
     title: SEO_TITLE,
     description: SEO_DESCRIPTION,
     url: `${BASE_URL}/`,
@@ -21,12 +25,26 @@ export const metadata: Metadata = {
     locale: 'en_GB',
     type: 'website',
   },
-
-  twitter: {                         // Twitter/X card
+  twitter: {
     card: 'summary_large_image',
     title: SEO_TITLE,
     description: SEO_DESCRIPTION,
     creator: '@yourtwitterhandle',
     images: [`${BASE_URL}/hero-photo.png`],
   },
+}
+
+// Client-only imports (no SSR)
+const Hero = dynamic(() => import('@/components/hero'), { ssr: false })
+const CTA = dynamic(() => import('@/components/cta'), { ssr: false })
+
+export default function Home() {
+  return (
+    <div>
+      <Hero />
+      <Pillars />
+      <FAQ />
+      <CTA />
+    </div>
+  )
 }
