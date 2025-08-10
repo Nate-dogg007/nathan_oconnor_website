@@ -1,62 +1,49 @@
+// components/hero.tsx
 'use client'
 
-import Link from 'next/link'
 import Image from 'next/image'
 
 export default function Hero() {
   function scrollToForm() {
-    const formElement = document.getElementById('contact-form')
-    if (formElement) {
-      formElement.scrollIntoView({ behavior: 'smooth' })
-    }
+    const el = document.getElementById('contact-form')
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   return (
-    <section className="bg-black text-white">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 py-20 sm:px-6 md:grid-cols-2 lg:px-8">
-        {/* Text */}
+    <section className="relative isolate bg-[#101C3C] text-white">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:py-20 lg:px-8">
+        {/* Left: copy */}
         <div>
-          <p className="mb-3 text-sm uppercase tracking-wider text-gray-300">
-            Privacy‑First. Performance‑Driven.
-          </p>
-
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
-            Nathan O’Connor
+          <h1 className="text-[33px] leading-tight text-white">
+            {'Unlock Growth Through'}
           </h1>
+          <h2 className="mt-2 text-[33px] leading-tight text-[#FFA64C]">
+            {'Data-Driven, Privacy-First Marketing'}
+          </h2>
 
-          <p className="mt-5 max-w-xl text-gray-300">
-            I help businesses scale with performance marketing, smart automation, and AI‑powered
-            systems — all built with privacy at the core.
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-center gap-4">
+          <div className="mt-8">
             <button
               type="button"
               onClick={scrollToForm}
-              className="rounded-md bg-white px-8 py-3 text-base font-medium text-gray-900 hover:bg-gray-100"
+              className="inline-flex items-center rounded-md bg-[#FFA64C] px-6 py-3 text-base font-medium text-[#101C3C] transition-colors hover:bg-[#ff9d37] focus:outline-none focus:ring-2 focus:ring-white/20"
             >
-              Get Started
+              {'Get Started'}
             </button>
-
-            <Link
-              href="/about"
-              className="rounded-md border border-gray-500 bg-transparent px-8 py-3 text-center text-base font-medium text-white hover:bg-gray-800"
-            >
-              Learn More
-            </Link>
           </div>
         </div>
 
-        {/* Image */}
-        <div className="relative h-64 w-full sm:h-80 md:h-[28rem]">
-          <Image
-            src="/hero-photo.png"
-            alt="Nathan O’Connor"
-            fill
-            priority
-            sizes="(min-width: 1024px) 600px, 100vw"
-            className="rounded-lg object-cover"
-          />
+        {/* Right: image (hidden on mobile, anchored to bottom) */}
+        <div className="relative hidden md:block">
+          <div className="relative h-[22rem] w-full">
+            <Image
+              src="/hero-photo.png"
+              alt="Nathan O’Connor"
+              fill
+              priority
+              sizes="(min-width: 1024px) 600px, 50vw"
+              className="object-contain object-bottom"
+            />
+          </div>
         </div>
       </div>
     </section>
