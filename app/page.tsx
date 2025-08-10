@@ -1,4 +1,5 @@
-import Hero from "@/components/hero"
+import dynamic from "next/dynamic"
+const Hero = dynamic(() => import("@/components/hero"), { ssr: false })
 import Pillars from "@/components/pillars"
 import FAQ from "@/components/faq"
 import CTA from "@/components/cta"
