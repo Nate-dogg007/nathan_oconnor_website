@@ -1,13 +1,12 @@
-// components/hero.tsx
-'use client'
+"use client"
 
-import Link from 'next/link'
-import Image from 'next/image'
+import Link from "next/link"
+import Image from "next/image"
 
 export default function Hero() {
   function scrollToForm() {
-    const el = document.getElementById('contact-form')
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const el = document.getElementById("contact-form")
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
   return (
@@ -22,15 +21,15 @@ export default function Hero() {
       >
         {/* Left column: vertically centered */}
         <div className="self-center">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl text-white">
-            {'Unlock Growth Through'}
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl text-white">{"Unlock Growth Through"}</h1>
           <h2 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl text-[#FFA64C]">
-            {'Data-Driven, Privacy-First Marketing'}
+            {"Data-Driven, Privacy-First Marketing"}
           </h2>
 
           <p className="mt-4 max-w-xl text-white/85">
-            {'I help businesses scale with performance marketing, smart automation, and AI-powered systems, all built with privacy at the core.'}
+            {
+              "I help businesses scale with performance marketing, smart automation, and AI-powered systems, all built with privacy at the core."
+            }
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
@@ -39,19 +38,19 @@ export default function Hero() {
               onClick={scrollToForm}
               className="rounded-md bg-[#FFA64C] px-8 py-3 text-base font-medium text-[#101C3C] shadow-sm transition-colors hover:bg-[#ff9f3a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFA64C]/60"
             >
-              {'Get Started'}
+              {"Get Started"}
             </button>
 
             <Link
               href="/about-me"
               className="rounded-md border border-white/40 bg-transparent px-8 py-3 text-center text-base font-medium text-white transition-colors hover:bg-white/10"
             >
-              {'Learn More'}
+              {"Learn More"}
             </Link>
           </div>
         </div>
 
-        {/* Right column: larger image, pinned to bottom, hidden on mobile */}
+        {/* Right column: larger image, bottom-aligned, hidden on mobile */}
         <div className="relative hidden md:flex items-end">
           <div className="relative h-[26rem] w-full lg:h-[38rem]">
             <Image
