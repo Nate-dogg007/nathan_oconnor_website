@@ -33,12 +33,14 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <div>
+    <main>
       <Hero />
-      <Pillars />
-      <FAQ />
-      <CTA />
+      <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <Pillars />
+        <FAQ />
+        <CTA />
+      </div>
       <ContactForm className="mt-12 mb-16" />
-    </div>
+    </main>
   )
 }
