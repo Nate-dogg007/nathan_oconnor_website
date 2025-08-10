@@ -12,9 +12,16 @@ export default function Hero() {
 
   return (
     <section className="relative isolate bg-[#101C3C] text-white">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 items-end gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:py-20 lg:px-8">
-        {/* Left: copy */}
-        <div>
+      <div
+        className="
+          mx-auto grid max-w-6xl grid-cols-1 gap-10
+          px-4 sm:px-6 lg:px-8
+          md:grid-cols-2
+          min-h-[26rem] lg:min-h-[36rem]
+        "
+      >
+        {/* Left column: vertically centered */}
+        <div className="self-center">
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl text-white">
             {'Unlock Growth Through'}
           </h1>
@@ -44,15 +51,15 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Right: image (hidden on mobile, bottom-aligned, larger) */}
-        <div className="relative hidden md:block">
-          <div className="relative h-[26rem] w-full lg:h-[34rem]">
+        {/* Right column: larger image, pinned to bottom, hidden on mobile */}
+        <div className="relative hidden md:flex items-end">
+          <div className="relative h-[26rem] w-full lg:h-[38rem]">
             <Image
               src="/hero-photo.png"
               alt="Hero image"
               fill
               priority
-              sizes="(min-width: 1024px) 600px, 50vw"
+              sizes="(min-width: 1024px) 700px, 50vw"
               className="object-contain object-bottom"
             />
           </div>
