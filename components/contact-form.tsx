@@ -25,41 +25,53 @@ async function sha256Hex(input: string) {
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase()
 }
-
 function normalizeName(name: string) {
   return name.trim().toLowerCase()
 }
-
 function getEventId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID()
-  }
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID()
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
-async function pushContactSubmitDL(params: { name: string; email: string }) {
+async function pushContactSubmitDL(params: {
+  name: string
+  email: string
+  delivered: boolean
+  eventStatus: "attempt" | "success" | "error"
+}) {
+  const base = {
+    page_location: typeof window !== "undefined" ? window.location.href : "",
+    page_path: typeof window !== "undefined" ? window.location.pathname : "",
+  }
+
+  if (params.eventStatus === "attempt") {
+    window.dataLayer = window.dataLayer || []
+    window.dataLayer.push({ event: "contact_form_submit_attempt", ...base })
+    return
+  }
+
+  if (params.eventStatus === "error") {
+    window.dataLayer = window.dataLayer || []
+    window.dataLayer.push({ event: "contact_form_submit_error", ...base })
+    return
+  }
+
+  // success: include hashed identifiers
   const email_sha256 = await sha256Hex(normalizeEmail(params.email))
   const name_sha256 = await sha256Hex(normalizeName(params.name))
   const event_id = getEventId()
-  const page_location = typeof window !== "undefined" ? window.location.href : ""
-  const page_path = typeof window !== "undefined" ? window.location.pathname : ""
 
   window.dataLayer = window.dataLayer || []
   window.dataLayer.push({
     event: "contact_form_submit",
     event_id,
-    page_location,
-    page_path,
-    user: {
-      email_sha256,
-      name_sha256,
-    },
+    delivered: params.delivered,
+    ...base,
+    user: { email_sha256, name_sha256 },
   })
 }
 
-type Props = {
-  className?: string
-}
+type Props = { className?: string }
 
 export default function ContactForm({ className }: Props) {
   const { toast } = useToast()
@@ -74,7 +86,6 @@ export default function ContactForm({ className }: Props) {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (website) return // bot caught
-
     if (!name || !email || !message) {
       toast({ title: "Please fill in name, email, and message." })
       return
@@ -82,14 +93,7 @@ export default function ContactForm({ className }: Props) {
 
     try {
       setLoading(true)
-
-      // Attempt event (no PII)
-      window.dataLayer = window.dataLayer || []
-      window.dataLayer.push({
-        event: "contact_form_submit_attempt",
-        page_location: typeof window !== "undefined" ? window.location.href : "",
-        page_path: typeof window !== "undefined" ? window.location.pathname : "",
-      })
+      await pushContactSubmitDL({ name, email, delivered: false, eventStatus: "attempt" })
 
       const res = await fetch("/api/contact", {
         method: "POST",
@@ -97,24 +101,33 @@ export default function ContactForm({ className }: Props) {
         body: JSON.stringify({ name, email, message, company }),
       })
 
-      if (!res.ok) {
-        window.dataLayer.push({
-          event: "contact_form_submit_error",
-          page_location: typeof window !== "undefined" ? window.location.href : "",
-          page_path: typeof window !== "undefined" ? window.location.pathname : "",
-        })
-        throw new Error("Request failed")
+      const data = await res.json().catch(() => ({}) as any)
+      if (!res.ok || data?.ok === false) {
+        await pushContactSubmitDL({ name, email, delivered: false, eventStatus: "error" })
+        const errorMsg = data?.error || "Failed to send. Please try again."
+        toast({ title: errorMsg })
+        return
       }
 
-      // Success event with hashed fields
-      await pushContactSubmitDL({ name, email })
+      const delivered = Boolean(data?.delivered !== false)
+      await pushContactSubmitDL({ name, email, delivered, eventStatus: "success" })
 
-      toast({ title: "Thanks! Your message has been sent." })
+      // UX copy distinguishes delivery state
+      if (delivered) {
+        toast({ title: "Thanks! Your message has been sent." })
+      } else {
+        toast({
+          title: "Message received",
+          description: "Email notifications aren’t configured yet, but your message was submitted.",
+        })
+      }
+
       setName("")
       setEmail("")
       setMessage("")
       setCompany("")
     } catch {
+      await pushContactSubmitDL({ name, email, delivered: false, eventStatus: "error" })
       toast({ title: "Something went wrong. Please try again." })
     } finally {
       setLoading(false)
@@ -132,9 +145,9 @@ export default function ContactForm({ className }: Props) {
         >
           {/* Left column: copy */}
           <div className="self-center text-white">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{"Ready to grow your business?"}</h2>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Ready to grow your business?</h2>
             <p className="mt-2 text-white/85">
-              {"Get started today and see how my solutions can transform your business."}
+              Get started today and see how my solutions can transform your business.
             </p>
 
             <ul className="mt-6 space-y-3">
@@ -155,13 +168,13 @@ export default function ContactForm({ className }: Props) {
           {/* Right column: form card (white background) */}
           <div className="self-center">
             <div className="rounded-lg border border-white/10 bg-white p-6 shadow-sm">
-              <h3 className="text-xl font-semibold text-zinc-900">{"Contact me"}</h3>
-              <p className="mt-1 text-sm text-zinc-600">{"I’ll get back to you as soon as possible."}</p>
+              <h3 className="text-xl font-semibold text-zinc-900">Contact me</h3>
+              <p className="mt-1 text-sm text-zinc-600">I’ll get back to you as soon as possible.</p>
 
               <form onSubmit={onSubmit} className="mt-6 space-y-4">
                 {/* Honeypot (hidden) */}
                 <div className="hidden">
-                  <Label htmlFor="website">{"Website"}</Label>
+                  <Label htmlFor="website">Website</Label>
                   <Input
                     id="website"
                     name="website"
@@ -174,7 +187,7 @@ export default function ContactForm({ className }: Props) {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="name">{"Name"}</Label>
+                    <Label htmlFor="name">Name</Label>
                     <Input
                       id="name"
                       name="name"
@@ -185,7 +198,7 @@ export default function ContactForm({ className }: Props) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">{"Email"}</Label>
+                    <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
                       type="email"
@@ -199,7 +212,7 @@ export default function ContactForm({ className }: Props) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="company">{"Company (optional)"}</Label>
+                  <Label htmlFor="company">Company (optional)</Label>
                   <Input
                     id="company"
                     name="company"
@@ -210,7 +223,7 @@ export default function ContactForm({ className }: Props) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="message">{"Message"}</Label>
+                  <Label htmlFor="message">Message</Label>
                   <Textarea
                     id="message"
                     name="message"
