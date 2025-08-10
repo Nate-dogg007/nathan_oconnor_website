@@ -1,5 +1,6 @@
 // app/page.tsx
-import dynamic from 'next/dynamic'
+import Hero from '@/components/hero'
+import CTA from '@/components/cta'
 import Pillars from '@/components/pillars'
 import FAQ from '@/components/faq'
 import type { Metadata } from 'next'
@@ -29,14 +30,9 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: SEO_TITLE,
     description: SEO_DESCRIPTION,
-    creator: '@yourtwitterhandle',
     images: [`${BASE_URL}/hero-photo.png`],
   },
 }
-
-// Client-only imports (no SSR)
-const Hero = dynamic(() => import('@/components/hero'), { ssr: false })
-const CTA = dynamic(() => import('@/components/cta'), { ssr: false })
 
 export default function Home() {
   return (
