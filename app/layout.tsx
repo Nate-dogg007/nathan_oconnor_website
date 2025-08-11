@@ -5,11 +5,13 @@ import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { GoogleTagManager } from "@next/third-parties/google"
 import { BASE_URL } from "@/lib/constants"
+import MatomoLoader from "@/components/matomo-loader"
 
 const inter = Inter({ subsets: ["latin"] })
 
-// Read GTM ID from env; set NEXT_PUBLIC_GTM_ID in Vercel Project Settings
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
+const MATOMO_DOMAIN = process.env.NEXT_PUBLIC_MATOMO_DOMAIN // e.g. "nathanoconnor.matomo.cloud"
+const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID // e.g. "1"
 
 export const metadata = {
   title: {
@@ -25,14 +27,7 @@ export const metadata = {
       "I help businesses scale with performance marketing, smart automation, and AI-powered systems, all built with privacy at the core. Unlock growth through data-driven strategies.",
     url: BASE_URL,
     siteName: "Nathan O'Connor",
-    images: [
-      {
-        url: `${BASE_URL}/hero-photo.png`,
-        width: 800,
-        height: 600,
-        alt: "Nathan O'Connor",
-      },
-    ],
+    images: [{ url: `${BASE_URL}/hero-photo.png`, width: 800, height: 600, alt: "Nathan O'Connor" }],
     locale: "en_GB",
     type: "website",
   },
@@ -62,16 +57,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.className}>
       <head>
-        {/* Preconnect to third-party origins used early to reduce DNS/TLS time */}
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" />
         <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="" />
         <link rel="preconnect" href="https://consent.cookiebot.com" crossOrigin="" />
-        {/* Keep structured data in head */}
+        <link rel="preconnect" href="https://cdn.matomo.cloud" crossOrigin="" />
+        {MATOMO_DOMAIN ? <link rel="preconnect" href={`https://${MATOMO_DOMAIN}`} crossOrigin="" /> : null}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       </head>
       <body>
-        {/* Site-wide, non-blocking Google Tag Manager */}
         {GTM_ID ? <GoogleTagManager gtmId={GTM_ID} /> : null}
+        {/* Load Matomo only when configured and after consent */}
+        {MATOMO_DOMAIN && MATOMO_SITE_ID ? <MatomoLoader domain={MATOMO_DOMAIN} siteId={MATOMO_SITE_ID} /> : null}
         <div className="flex min-h-screen flex-col">
           <Header />
           <main className="flex-grow">{children}</main>
