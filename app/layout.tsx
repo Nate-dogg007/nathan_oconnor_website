@@ -37,10 +37,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   const sgtm = SGTM_URL ? SGTM_URL.replace(/\/+$/, "") : undefined
 
-  if (typeof window === "undefined") {
-    console.log("GTM Debug - SGTM_URL:", SGTM_URL, "sgtm:", sgtm, "GTM_ID:", GTM_ID)
-  }
-
   return (
     <html lang="en" className={inter.className}>
       <head>
@@ -67,13 +63,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               wait_for_update: 500
             });
             gtag('js', new Date());
-          `}
-        </Script>
-
-        <Script id="debug-sgtm" strategy="afterInteractive">
-          {`
-            console.log("Client Debug - SGTM_URL: ${SGTM_URL || "undefined"}, GTM_ID: ${GTM_ID || "undefined"}");
-            console.log("GTM Script URL should be: ${sgtm ? `${sgtm}/gtm.js` : "undefined"}");
           `}
         </Script>
       </head>
