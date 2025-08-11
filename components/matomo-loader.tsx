@@ -34,7 +34,7 @@ export default function MatomoLoader({ domain, siteId }: Props) {
 
   return (
     <>
-      <Script id="matomo-init" strategy="afterInteractive">
+      <Script id="matomo-init" strategy="lazyOnload">
         {`
           window._paq = window._paq || [];
           _paq.push(["disableCookies"]);
@@ -47,7 +47,7 @@ export default function MatomoLoader({ domain, siteId }: Props) {
           })();
         `}
       </Script>
-      <Script id="matomo-js" src={scriptSrc} strategy="afterInteractive" />
+      <Script id="matomo-js" src={scriptSrc} strategy="lazyOnload" />
     </>
   )
 }
