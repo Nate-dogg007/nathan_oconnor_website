@@ -250,7 +250,7 @@ export default function ContactForm({ className }: Props) {
                 </div>
 
                 <div className="pt-2">
-                  <Button type="submit" disabled={loading} className="bg-[#FFA64C] text-white hover:bg-[#ff9f3a]">
+                  <Button type="submit" disabled={loading} className="bg-[#E8730C] text-white hover:bg-[#D4620A]">
                     {loading ? "Sending…" : "Send message"}
                   </Button>
                 </div>
