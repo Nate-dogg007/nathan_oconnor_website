@@ -37,6 +37,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   const sgtm = SGTM_URL ? SGTM_URL.replace(/\/+$/, "") : undefined
 
+  if (typeof window !== "undefined") {
+    console.log("🔍 GTM Debug:", { SGTM_URL, sgtm, GTM_ID, gtmScriptUrl: sgtm ? `${sgtm}/gtm.js` : undefined })
+  }
+
   return (
     <html lang="en" className={inter.className}>
       <head>
