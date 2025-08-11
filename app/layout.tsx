@@ -81,6 +81,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           `}
         </Script>
 
+        <Script id="debug-sgtm" strategy="afterInteractive">
+          {`
+            console.log("Client Debug - SGTM_URL: ${SGTM_URL || "undefined"}, GTM_ID: ${GTM_ID || "undefined"}");
+            console.log("GTM Script URL should be: ${sgtm ? `${sgtm}/gtm.js` : "undefined"}");
+          `}
+        </Script>
+
         {/* Cookiebot */}
         {COOKIEBOT_ID ? (
           <Script
