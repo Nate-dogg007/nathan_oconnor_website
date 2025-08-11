@@ -1,19 +1,12 @@
-"use client"
-
 import Link from "next/link"
 import Image from "next/image"
 
 export default function Hero() {
-  function scrollToForm() {
-    const el = document.getElementById("contact-form")
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" })
-  }
-
   return (
     <section className="relative isolate bg-[#101C3C] text-white">
       <div
         className="
-          mx-auto grid max-w-6xl grid-cols-1 gap-10
+          mx-auto grid max-w-5xl grid-cols-1 gap-10
           px-4 sm:px-6 lg:px-8
           md:grid-cols-2
           min-h-[26rem] lg:min-h-[36rem]
@@ -33,13 +26,12 @@ export default function Hero() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
-            <button
-              type="button"
-              onClick={scrollToForm}
+            <Link
+              href="#contact-form"
               className="rounded-md bg-[#FFA64C] px-8 py-3 text-base font-medium text-[#101C3C] shadow-sm transition-colors hover:bg-[#ff9f3a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFA64C]/60"
             >
               {"Get Started"}
-            </button>
+            </Link>
 
             <Link
               href="/about-me"
