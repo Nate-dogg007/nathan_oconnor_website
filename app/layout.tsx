@@ -49,17 +49,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : (
           <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" />
         )}
-        <link rel="preconnect" href="https://consent.cookiebot.com" crossOrigin="" />
-        <link rel="dns-prefetch" href="https://consent.cookiebot.com" />
-
-        {COOKIEBOT_ID ? (
-          <link
-            rel="preload"
-            href={`https://consent.cookiebot.com/uc.js?cbid=${COOKIEBOT_ID}`}
-            as="script"
-            crossOrigin=""
-          />
-        ) : null}
 
         {/* JSON-LD */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
@@ -87,16 +76,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             console.log("GTM Script URL should be: ${sgtm ? `${sgtm}/gtm.js` : "undefined"}");
           `}
         </Script>
-
-        {/* Cookiebot */}
-        {COOKIEBOT_ID ? (
-          <Script
-            id="cookiebot"
-            src={`https://consent.cookiebot.com/uc.js?cbid=${COOKIEBOT_ID}`}
-            data-blockingmode="auto"
-            strategy="beforeInteractive"
-          />
-        ) : null}
       </head>
       <body>
         {GTM_ID ? <GoogleTagManager gtmId={GTM_ID} gtmScriptUrl={sgtm ? `${sgtm}/gtm.js` : undefined} /> : null}
