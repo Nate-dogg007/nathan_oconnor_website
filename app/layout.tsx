@@ -39,6 +39,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.className}>
       <head>
+        <link rel="preload" href="/static/css/app/layout.css" as="style" />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+            /* Critical CSS for layout structure */
+            html { line-height: 1.5; -webkit-text-size-adjust: 100%; }
+            body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; }
+            .flex { display: flex; }
+            .min-h-screen { min-height: 100vh; }
+            .flex-col { flex-direction: column; }
+            .flex-grow { flex-grow: 1; }
+            /* Prevent layout shift */
+            main { min-height: 50vh; }
+          `,
+          }}
+        />
+
         {sgtm ? (
           <link rel="preconnect" href={sgtm} crossOrigin="" />
         ) : (
