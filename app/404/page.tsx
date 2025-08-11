@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import Link from "next/link"
-import NotFound404Client from "@/components/404-client"
+import NotFoundClient from "@/components/not-found-client"
 
 export const dynamic = "force-static"
 
@@ -10,9 +10,9 @@ export default function Page404() {
       <h1 className="text-3xl font-bold">Page not found</h1>
       <p className="mt-2 text-zinc-600">The page you’re looking for doesn’t exist or may have moved.</p>
 
-      {/* Client-only hooks must be rendered inside Suspense */}
+      {/* Wrap client hooks in Suspense */}
       <Suspense fallback={null}>
-        <NotFound404Client />
+        <NotFoundClient />
       </Suspense>
 
       <div className="mt-8">
