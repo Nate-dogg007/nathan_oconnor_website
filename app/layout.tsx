@@ -36,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }
 
   const sgtm = SGTM_URL ? SGTM_URL.replace(/\/+$/, "") : undefined
+  const cacheBuster = Date.now()
 
   return (
     <html lang="en" className={inter.className}>
@@ -65,18 +66,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             gtag('js', new Date());
           `}
         </Script>
-
-        <Script id="gtm-debug" strategy="afterInteractive">
-          {`
-            console.log('🔍 GTM Debug - SGTM_URL:', '${SGTM_URL || "undefined"}');
-            console.log('🔍 GTM Debug - sgtm:', '${sgtm || "undefined"}');
-            console.log('🔍 GTM Debug - GTM_ID:', '${GTM_ID || "undefined"}');
-            console.log('🔍 GTM Debug - gtmScriptUrl:', '${sgtm ? `${sgtm}/gtm.js` : "undefined"}');
-          `}
-        </Script>
       </head>
       <body>
-        {GTM_ID ? <GoogleTagManager gtmId={GTM_ID} gtmScriptUrl={sgtm ? `${sgtm}/gtm.js` : undefined} /> : null}
+        {GTM_ID ? (
+          <GoogleTagManager gtmId={GTM_ID} gtmScriptUrl={sgtm ? `${sgtm}/gtm.js?v=${cacheBuster}` : undefined} />
+        ) : null}
 
         <ConsentBridge />
 
