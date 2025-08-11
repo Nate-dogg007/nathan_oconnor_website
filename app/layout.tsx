@@ -35,13 +35,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     url: BASE_URL,
   }
 
-  // Normalize SGTM url
   const sgtm = SGTM_URL ? SGTM_URL.replace(/\/+$/, "") : undefined
 
   return (
     <html lang="en" className={inter.className}>
       <head>
-        {/* Preconnects for faster first request */}
+        {/* Preconnect only to your sGTM domain and Cookiebot */}
         {sgtm ? (
           <>
             <link rel="preconnect" href={sgtm} crossOrigin="" />
@@ -51,27 +50,31 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://consent.cookiebot.com" crossOrigin="" />
         <link rel="dns-prefetch" href="https://consent.cookiebot.com" />
 
+        {COOKIEBOT_ID ? (
+          <link rel="preload" href="https://consent.cookiebot.com/uc.js" as="script" crossOrigin="" />
+        ) : null}
+
         {/* JSON-LD */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
 
         {/* Consent defaults BEFORE GTM loads */}
         <Script id="consent-defaults" strategy="beforeInteractive">
           {`
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('consent', 'default', {
-          ad_user_data: 'denied',
-          ad_personalization: 'denied',
-          ad_storage: 'denied',
-          analytics_storage: 'denied',
-          functionality_storage: 'granted',
-          security_storage: 'granted',
-          wait_for_update: 500
-        });
-      `}
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('consent', 'default', {
+              ad_user_data: 'denied',
+              ad_personalization: 'denied',
+              ad_storage: 'denied',
+              analytics_storage: 'denied',
+              functionality_storage: 'granted',
+              security_storage: 'granted',
+              wait_for_update: 500
+            });
+          `}
         </Script>
 
-        {/* Cookiebot (single source of truth) */}
+        {/* Cookiebot */}
         {COOKIEBOT_ID ? (
           <Script
             id="cookiebot"
@@ -83,12 +86,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : null}
       </head>
       <body>
-        {/* Load GTM from your sGTM domain if provided */}
+        {/* Load GTM, pointing to your server-side container */}
         {GTM_ID ? <GoogleTagManager gtmId={GTM_ID} gtmScriptUrl={sgtm ? `${sgtm}/gtm.js` : undefined} /> : null}
 
         <ConsentBridge />
 
-        {/* useSearchParams is used here; wrap in Suspense */}
+        {/* Client routing page_view events need Suspense */}
         <Suspense fallback={null}>
           <GTMRouteEvents />
         </Suspense>
