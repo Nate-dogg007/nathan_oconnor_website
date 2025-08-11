@@ -15,7 +15,7 @@ export default function Hero() {
         {/* Left column: vertically centered */}
         <div className="self-center">
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl text-white">{"Unlock Growth Through"}</h1>
-          <h2 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl text-[#FFA64C]">
+          <h2 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl text-[#E8730C]">
             {"Data-Driven, Privacy-First Marketing"}
           </h2>
 
@@ -28,7 +28,7 @@ export default function Hero() {
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <Link
               href="#contact-form"
-              className="rounded-md bg-[#FFA64C] px-8 py-3 text-base font-medium text-white shadow-sm transition-colors hover:bg-[#ff9f3a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFA64C]/60"
+              className="rounded-md bg-[#E8730C] px-8 py-3 text-base font-medium text-white shadow-sm transition-colors hover:bg-[#D4620A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E8730C]/60"
             >
               {"Get Started"}
             </Link>
