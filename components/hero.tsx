@@ -49,7 +49,6 @@ export default function Hero() {
               src="/hero-photo.png"
               alt="Hero image"
               fill
-              priority
               sizes="(min-width: 1024px) 700px, 50vw"
               className="object-contain object-bottom"
             />
