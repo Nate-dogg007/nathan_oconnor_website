@@ -84,13 +84,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {GTM_ID ? (
-          <Script
-            src={sgtm ? `${sgtm}/gtm.js?id=${GTM_ID}` : `https://www.googletagmanager.com/gtm.js?id=${GTM_ID}`}
-            strategy="afterInteractive"
-          />
-        ) : null}
-
-        {GTM_ID ? (
           <Script id="gtm-init" strategy="afterInteractive">
             {`
               (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
