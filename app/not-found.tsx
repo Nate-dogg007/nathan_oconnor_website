@@ -1,6 +1,8 @@
-import Link from "next/link"
 import { Suspense } from "react"
+import Link from "next/link"
 import NotFoundClient from "@/components/not-found-client"
+
+export const dynamic = "force-static"
 
 export default function NotFound() {
   return (
@@ -8,7 +10,7 @@ export default function NotFound() {
       <h1 className="text-3xl font-bold">Page not found</h1>
       <p className="mt-2 text-zinc-600">The page you’re looking for doesn’t exist or may have moved.</p>
 
-      {/* Anything that uses useSearchParams/usePathname must be inside Suspense and a client component */}
+      {/* Any useSearchParams/usePathname must be inside Suspense and a client component */}
       <Suspense fallback={null}>
         <NotFoundClient />
       </Suspense>
