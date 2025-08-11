@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "browserslist": {
-    "production": ["Chrome >= 95", "Firefox >= 94", "Safari >= 15.4", "Edge >= 95", "not dead"],
+    "production": ["Chrome >= 97", "Firefox >= 97", "Safari >= 16", "Edge >= 97", "not dead"],
     "development": ["last 1 Chrome version", "last 1 Firefox version", "last 1 Safari major version"]
   },
   "dependencies": {
