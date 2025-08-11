@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   const sgtm = SGTM_URL ? SGTM_URL.replace(/\/+$/, "") : undefined
 
-  if (typeof window !== "undefined") {
+  if (typeof window === "undefined") {
     console.log("GTM Debug - SGTM_URL:", SGTM_URL, "sgtm:", sgtm, "GTM_ID:", GTM_ID)
   }
 
