@@ -1,49 +1,48 @@
-// components/hero.tsx
-export default function Hero() {
+/// app/page.tsx
+export const dynamic = "force-static";
+
+// app/layout.tsx
+import React from 'react';
+
+const Layout = ({ children }) => {
 return (
-  <div className="mx-auto grid max-w-5xl grid-cols-1 gap-10">
-    {/* Hero content here */}
-  </div>
+  <html lang="en">
+    <head>
+      <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" />
+      <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+      <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="" />
+      <link rel="preconnect" href="https://consent.cookiebot.com" crossOrigin="" />
+      <link rel="dns-prefetch" href="https://consent.cookiebot.com" />
+      {/* If you use Matomo Cloud */}
+      <link rel="preconnect" href="https://cdn.matomo.cloud" crossOrigin="" />
+      {/* Optional: your Matomo subdomain, only if configured */}
+      {/* <link rel="preconnect" href="https://nathanoconnor.matomo.cloud" crossOrigin="" /> */}
+      {/* JSON-LD should stay here */}
+    </head>
+    <body>
+      {children}
+    </body>
+  </html>
 );
+};
+
+export default Layout;
+
+// package.json
+{
+"browserslist": {
+  "production": [
+    "last 2 Chrome versions",
+    "last 2 Firefox versions",
+    "last 2 Safari major versions",
+    "last 2 Edge versions",
+    "not IE 11",
+    "not dead"
+  ],
+  "development": [
+    "last 1 Chrome version",
+    "last 1 Firefox version",
+    "last 1 Safari major version"
+  ]
 }
-
-// components/contact-form.tsx
-export default function ContactForm() {
-return (
-  <div className="container mx-auto grid max-w-5xl grid-cols-1 gap-10 px-4 py-12">
-    {/* Form content here */}
-  </div>
-);
-}
-
-// app/page.tsx
-import Hero from "@/components/hero";
-import Pillars from "@/components/pillars";
-import FAQ from "@/components/faq";
-import CTA from "@/components/cta";
-import ContactForm from "@/components/contact-form";
-
-export default function Home() {
-return (
-  <main>
-    <Hero />
-    <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-      <Pillars />
-      <FAQ />
-      <CTA />
-      <ContactForm className="mt-12 mb-16" />
-    </div>
-  </main>
-);
-}
-
-// app/contact/ContactPageClient.tsx
-import ContactForm from "@/components/contact-form";
-
-export default function ContactPageClient() {
-return (
-  <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
-    <ContactForm />
-  </div>
-);
 }
