@@ -14,7 +14,7 @@ export default function CTA() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Link
             href="/contact"
-            className="inline-flex items-center gap-2 rounded-md bg-[#FFA64C] px-8 py-3 text-base font-medium text-white shadow-sm transition-colors hover:bg-[#ff9f3a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFA64C]/60"
+            className="inline-flex items-center gap-2 rounded-md bg-[#E8730C] px-8 py-3 text-base font-medium text-white shadow-sm transition-colors hover:bg-[#D4620A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E8730C]/60"
           >
             Start Your Project
             <ArrowRight className="h-4 w-4" />
