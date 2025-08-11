@@ -42,10 +42,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={inter.className}>
       <head>
         {/* Preconnects for faster first request */}
-        {sgtm ? <link rel="preconnect" href={sgtm} crossOrigin="" /> : null}
-        <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" />
-        <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="" />
+        {sgtm ? (
+          <>
+            <link rel="preconnect" href={sgtm} crossOrigin="" />
+            <link rel="dns-prefetch" href={sgtm} />
+          </>
+        ) : (
+          <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" />
+        )}
         <link rel="preconnect" href="https://consent.cookiebot.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://consent.cookiebot.com" />
 
         {/* JSON-LD */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
@@ -53,18 +59,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Consent defaults BEFORE GTM loads */}
         <Script id="consent-defaults" strategy="beforeInteractive">
           {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('consent', 'default', {
-              ad_user_data: 'denied',
-              ad_personalization: 'denied',
-              ad_storage: 'denied',
-              analytics_storage: 'denied',
-              functionality_storage: 'granted',
-              security_storage: 'granted',
-              wait_for_update: 500
-            });
-          `}
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('consent', 'default', {
+            ad_user_data: 'denied',
+            ad_personalization: 'denied',
+            ad_storage: 'denied',
+            analytics_storage: 'denied',
+            functionality_storage: 'granted',
+            security_storage: 'granted',
+            wait_for_update: 500
+          });
+        `}
         </Script>
 
         {/* Cookiebot (single source of truth) */}
