@@ -35,24 +35,37 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     url: BASE_URL,
   }
 
-  const sgtm = SGTM_URL ? SGTM_URL.replace(/\/+$/, "") : undefined
+  const sgtm = SGTM_URL
+    ? (SGTM_URL.startsWith("http") ? SGTM_URL : `https://${SGTM_URL}`).replace(/\/+$/, "")
+    : undefined
+
+  if (typeof window !== "undefined") {
+    console.log("GTM Debug - SGTM_URL:", SGTM_URL, "sgtm:", sgtm, "GTM_ID:", GTM_ID)
+  }
 
   return (
     <html lang="en" className={inter.className}>
       <head>
-        {sgtm ? <link rel="preconnect" href={sgtm} crossOrigin="" /> : null}
-        {!sgtm ? <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" /> : null}
+        {sgtm ? (
+          <link rel="preconnect" href={sgtm} crossOrigin="" />
+        ) : (
+          <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" />
+        )}
         <link rel="preconnect" href="https://consent.cookiebot.com" crossOrigin="" />
         <link rel="dns-prefetch" href="https://consent.cookiebot.com" />
 
         {COOKIEBOT_ID ? (
-          <link rel="preload" href="https://consent.cookiebot.com/uc.js" as="script" crossOrigin="" />
+          <link
+            rel="preload"
+            href={`https://consent.cookiebot.com/uc.js?cbid=${COOKIEBOT_ID}`}
+            as="script"
+            crossOrigin=""
+          />
         ) : null}
 
         {/* JSON-LD */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
 
-        {/* Consent defaults BEFORE GTM loads */}
         <Script id="consent-defaults" strategy="beforeInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
@@ -66,6 +79,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               security_storage: 'granted',
               wait_for_update: 500
             });
+            gtag('js', new Date());
           `}
         </Script>
 
@@ -73,8 +87,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {COOKIEBOT_ID ? (
           <Script
             id="cookiebot"
-            src="https://consent.cookiebot.com/uc.js"
-            data-cbid={COOKIEBOT_ID}
+            src={`https://consent.cookiebot.com/uc.js?cbid=${COOKIEBOT_ID}`}
             data-blockingmode="auto"
             strategy="beforeInteractive"
           />
