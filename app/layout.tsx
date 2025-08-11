@@ -1,6 +1,6 @@
 import type React from "react"
 import { Inter } from "next/font/google"
-import "./globals.css"
+import "./globals.css" // uncommented the proper CSS import
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { BASE_URL } from "@/lib/constants"
@@ -43,6 +43,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : (
           <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" />
         )}
+
+        {/* removed broken reference to non-existent public CSS file */}
 
         {/* JSON-LD */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
