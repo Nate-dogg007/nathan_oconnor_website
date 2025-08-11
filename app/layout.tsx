@@ -13,7 +13,9 @@ import { Suspense } from "react"
 const inter = Inter({ subsets: ["latin"] })
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
-const COOKIEBOT_ID = process.env.NEXT_PUBLIC_COOKIEBOT_ID // e.g. "47835e3a-...."
+const COOKIEBOT_ID = process.env.NEXT_PUBLIC_COOKIEBOT_ID
+// e.g. "https://server.nathanoconnor.co.uk" (no trailing slash)
+const SGTM_URL = process.env.NEXT_PUBLIC_SGTM_URL
 
 export const metadata = {
   title: {
@@ -33,10 +35,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     url: BASE_URL,
   }
 
+  // Normalize SGTM url
+  const sgtm = SGTM_URL ? SGTM_URL.replace(/\/+$/, "") : undefined
+
   return (
     <html lang="en" className={inter.className}>
       <head>
-        {/* Warm up third-party connections */}
+        {/* Preconnects for faster first request */}
+        {sgtm ? <link rel="preconnect" href={sgtm} crossOrigin="" /> : null}
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" />
         <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="" />
         <link rel="preconnect" href="https://consent.cookiebot.com" crossOrigin="" />
@@ -44,22 +50,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* JSON-LD */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
 
-        {/* 1) Consent defaults BEFORE GTM loads */}
+        {/* Consent defaults BEFORE GTM loads */}
         <Script id="consent-defaults" strategy="beforeInteractive">
           {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          // Default to denied until Cookiebot updates
-          gtag('consent', 'default', {
-            ad_user_data: 'denied',
-            ad_personalization: 'denied',
-            ad_storage: 'denied',
-            analytics_storage: 'denied',
-            functionality_storage: 'granted',
-            security_storage: 'granted',
-            wait_for_update: 500
-          });
-        `}
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('consent', 'default', {
+              ad_user_data: 'denied',
+              ad_personalization: 'denied',
+              ad_storage: 'denied',
+              analytics_storage: 'denied',
+              functionality_storage: 'granted',
+              security_storage: 'granted',
+              wait_for_update: 500
+            });
+          `}
         </Script>
 
         {/* Cookiebot (single source of truth) */}
@@ -74,13 +79,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : null}
       </head>
       <body>
-        {/* 2) GTM loads site-wide. GTM will respect consent defaults/updates */}
-        {GTM_ID ? <GoogleTagManager gtmId={GTM_ID} /> : null}
+        {/* Load GTM from your sGTM domain if provided */}
+        {GTM_ID ? <GoogleTagManager gtmId={GTM_ID} gtmScriptUrl={sgtm ? `${sgtm}/gtm.js` : undefined} /> : null}
 
-        {/* 3) Bridge Cookiebot -> Consent Mode updates */}
         <ConsentBridge />
 
-        {/* 4) Push page_view on SPA route changes */}
+        {/* useSearchParams is used here; wrap in Suspense */}
         <Suspense fallback={null}>
           <GTMRouteEvents />
         </Suspense>
