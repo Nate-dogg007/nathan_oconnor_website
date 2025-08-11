@@ -3,7 +3,6 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
-import { GoogleTagManager } from "@next/third-parties/google"
 import { BASE_URL } from "@/lib/constants"
 import Script from "next/script"
 import ConsentBridge from "@/components/consent-bridge"
@@ -36,7 +35,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }
 
   const sgtm = SGTM_URL ? SGTM_URL.replace(/\/+$/, "") : undefined
-  const cacheBuster = Date.now()
 
   return (
     <html lang="en" className={inter.className}>
@@ -69,7 +67,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {GTM_ID ? (
-          <GoogleTagManager gtmId={GTM_ID} gtmScriptUrl={sgtm ? `${sgtm}/gtm.js?v=${cacheBuster}` : undefined} />
+          <Script
+            src={sgtm ? `${sgtm}/gtm.js?id=${GTM_ID}` : `https://www.googletagmanager.com/gtm.js?id=${GTM_ID}`}
+            strategy="afterInteractive"
+          />
+        ) : null}
+
+        {GTM_ID ? (
+          <Script id="gtm-init" strategy="afterInteractive">
+            {`
+              (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+              '${sgtm ? `${sgtm}/gtm.js` : "https://www.googletagmanager.com/gtm.js"}?id='+i+dl;f.parentNode.insertBefore(j,f);
+              })(window,document,'script','dataLayer','${GTM_ID}');
+            `}
+          </Script>
         ) : null}
 
         <ConsentBridge />
