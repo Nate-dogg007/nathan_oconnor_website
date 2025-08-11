@@ -1,3 +1,6 @@
+// Make the homepage fully static and cacheable to reduce document latency
+export const dynamic = "force-static"
+
 import Hero from "@/components/hero"
 import Pillars from "@/components/pillars"
 import ContactForm from "@/components/contact-form"
