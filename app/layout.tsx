@@ -40,13 +40,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.className}>
       <head>
-        {/* Preconnect only to your sGTM domain and Cookiebot */}
-        {sgtm ? (
-          <>
-            <link rel="preconnect" href={sgtm} crossOrigin="" />
-            <link rel="dns-prefetch" href={sgtm} />
-          </>
-        ) : null}
+        {sgtm ? <link rel="preconnect" href={sgtm} crossOrigin="" /> : null}
+        {!sgtm ? <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" /> : null}
         <link rel="preconnect" href="https://consent.cookiebot.com" crossOrigin="" />
         <link rel="dns-prefetch" href="https://consent.cookiebot.com" />
 
@@ -86,7 +81,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : null}
       </head>
       <body>
-        {/* Load GTM, pointing to your server-side container */}
         {GTM_ID ? <GoogleTagManager gtmId={GTM_ID} gtmScriptUrl={sgtm ? `${sgtm}/gtm.js` : undefined} /> : null}
 
         <ConsentBridge />
