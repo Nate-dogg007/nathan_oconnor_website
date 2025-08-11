@@ -28,7 +28,7 @@ export default function Hero() {
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <Link
               href="#contact-form"
-              className="rounded-md bg-[#FFA64C] px-8 py-3 text-base font-medium text-[#101C3C] shadow-sm transition-colors hover:bg-[#ff9f3a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFA64C]/60"
+              className="rounded-md bg-[#FFA64C] px-8 py-3 text-base font-medium text-white shadow-sm transition-colors hover:bg-[#ff9f3a] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFA64C]/60"
             >
               {"Get Started"}
             </Link>
