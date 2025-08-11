@@ -8,6 +8,7 @@ import { BASE_URL } from "@/lib/constants"
 import Script from "next/script"
 import ConsentBridge from "@/components/consent-bridge"
 import GTMRouteEvents from "@/components/gtm-route-events"
+import { Suspense } from "react"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -46,19 +47,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* 1) Consent defaults BEFORE GTM loads */}
         <Script id="consent-defaults" strategy="beforeInteractive">
           {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            // Default to denied until Cookiebot updates
-            gtag('consent', 'default', {
-              ad_user_data: 'denied',
-              ad_personalization: 'denied',
-              ad_storage: 'denied',
-              analytics_storage: 'denied',
-              functionality_storage: 'granted',
-              security_storage: 'granted',
-              wait_for_update: 500
-            });
-          `}
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          // Default to denied until Cookiebot updates
+          gtag('consent', 'default', {
+            ad_user_data: 'denied',
+            ad_personalization: 'denied',
+            ad_storage: 'denied',
+            analytics_storage: 'denied',
+            functionality_storage: 'granted',
+            security_storage: 'granted',
+            wait_for_update: 500
+          });
+        `}
         </Script>
 
         {/* Cookiebot (single source of truth) */}
@@ -80,7 +81,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ConsentBridge />
 
         {/* 4) Push page_view on SPA route changes */}
-        <GTMRouteEvents />
+        <Suspense fallback={null}>
+          <GTMRouteEvents />
+        </Suspense>
 
         <div className="flex min-h-screen flex-col">
           <Header />
