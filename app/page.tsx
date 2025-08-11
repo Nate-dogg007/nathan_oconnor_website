@@ -1,27 +1,13 @@
 import Hero from "@/components/hero"
-import dynamic from "next/dynamic"
 import Pillars from "@/components/pillars"
 import ContactForm from "@/components/contact-form"
+import DeferredHomeSections from "@/components/deferred-home-sections"
 import type { Metadata } from "next"
 import { BASE_URL } from "@/lib/constants"
 
 const SEO_TITLE = "Nathan O'Connor — Data‑Driven, Privacy‑First Marketing & AI Consultant"
 const SEO_DESCRIPTION =
   "I help businesses scale with performance marketing, smart automation, and AI‑powered systems, all built with privacy at the core. Unlock growth through data‑driven strategies."
-
-// Defer below-the-fold interactive sections
-const FAQ = dynamic(() => import("@/components/faq"), {
-  ssr: false,
-  loading: () => (
-    <section className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 my-16 h-28 animate-pulse rounded-lg bg-zinc-100" />
-  ),
-})
-const CTA = dynamic(() => import("@/components/cta"), {
-  ssr: false,
-  loading: () => (
-    <section className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 my-12 h-20 animate-pulse rounded-lg bg-zinc-100" />
-  ),
-})
 
 export const metadata: Metadata = {
   title: SEO_TITLE,
@@ -50,8 +36,8 @@ export default function Home() {
       <Hero />
       <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <Pillars />
-        <FAQ />
-        <CTA />
+        {/* Defer heavier interactive sections to the client */}
+        <DeferredHomeSections />
       </div>
       <ContactForm className="mt-12 mb-16" />
     </main>
