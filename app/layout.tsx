@@ -18,7 +18,7 @@ const SGTM_URL = process.env.NEXT_PUBLIC_SGTM_URL
 
 export const metadata = {
   title: {
-    default: "Nathan O'Connor | Data-Driven, Privacy-First Marketing & AI Consultant",
+    default: "Nathan O'Connor | Performance Marketing Consultant | Data-Driven, Privacy-First Marketing & AI Consultant",
     template: "%s | Nathan O'Connor",
   },
   description:
