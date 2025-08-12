@@ -165,7 +165,7 @@ export default function ContactForm({ className }: Props) {
                 "Performance-driven marketing strategies",
                 "AI-powered workflow automation",
                 "Privacy-first data management",
-                "Personalized support",
+                "Personalised support",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-3">
                   <Check className="mt-0.5 h-5 w-5 flex-none text-[#FFA64C]" />
