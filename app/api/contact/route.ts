@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server"
 import nodemailer from "nodemailer"
 
-const { GMAIL_USER, GMAIL_APP_PASSWORD, CONTACT_TO_EMAIL } = process.env
-
 export async function POST(req: Request) {
   try {
+    const GMAIL_USER = process.env.GMAIL_USER
+    const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD
+    const CONTACT_TO_EMAIL = process.env.CONTACT_TO_EMAIL
+
     console.log("[v0] Environment variables check:", {
       hasGmailUser: !!GMAIL_USER,
       hasGmailPassword: !!GMAIL_APP_PASSWORD,
