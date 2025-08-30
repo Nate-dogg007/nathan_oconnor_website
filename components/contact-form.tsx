@@ -90,12 +90,16 @@ export default function ContactForm({ className }: Props) {
       setStatus({ type: "idle" })
       await pushDLAttempt()
 
+      console.log("[v0] Making API call to /api/contact")
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, message, company, phone }),
       })
+
+      console.log("[v0] API response status:", res.status)
       const data = await res.json().catch(() => ({}))
+      console.log("[v0] API response data:", data)
 
       if (!res.ok || data?.ok === false) {
         await pushDLError()
