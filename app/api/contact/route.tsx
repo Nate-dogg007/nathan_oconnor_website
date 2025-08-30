@@ -72,8 +72,22 @@ export async function POST(req: Request) {
         console.log("[v0] Email sent successfully")
         return NextResponse.json({ ok: true, delivered: true })
       } catch (emailError) {
-        console.error("[v0] Email sending failed:", emailError)
-        return NextResponse.json({ ok: false, error: "Failed to send email via SMTP" }, { status: 500 })
+        console.error("[v0] Email sending failed with detailed error:", {
+          message: emailError.message,
+          code: emailError.code,
+          command: emailError.command,
+          response: emailError.response,
+          responseCode: emailError.responseCode,
+          stack: emailError.stack,
+        })
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "Failed to send email via SMTP",
+            details: emailError.message,
+          },
+          { status: 500 },
+        )
       }
     }
 
