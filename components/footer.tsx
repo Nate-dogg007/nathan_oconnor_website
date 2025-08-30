@@ -1,6 +1,12 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Facebook, Twitter, Instagram, Linkedin } from "lucide-react"
+import { Linkedin } from "lucide-react"
+
+const XIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+)
 
 export default function Footer() {
   return (
@@ -17,16 +23,22 @@ export default function Footer() {
             />
             <p className="mt-4 text-sm text-gray-600">Providing quality services for over 20+ years.</p>
             <div className="mt-6 flex justify-center space-x-4 md:justify-start">
-              <a href="#" className="text-gray-400 hover:text-gray-500" aria-label="Facebook">
-                <Facebook className="h-5 w-5" />
+              <a
+                href="https://x.com/NathanO74600725"
+                className="text-gray-400 hover:text-gray-500"
+                aria-label="X (formerly Twitter)"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <XIcon className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-gray-500" aria-label="Twitter">
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-gray-500" aria-label="Instagram">
-                <Instagram className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-gray-500" aria-label="LinkedIn">
+              <a
+                href="https://www.linkedin.com/in/nathanoconnor82/"
+                className="text-gray-400 hover:text-gray-500"
+                aria-label="LinkedIn"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Linkedin className="h-5 w-5" />
               </a>
             </div>
