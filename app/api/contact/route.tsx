@@ -1,124 +1,92 @@
 import { NextResponse } from "next/server"
-import nodemailer from "nodemailer"
+import { Resend } from "resend"
 
 export async function POST(req: Request) {
-  try {
-    const GMAIL_USER = process.env.GMAIL_USER
-    const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD
-    const CONTACT_TO_EMAIL = process.env.CONTACT_TO_EMAIL
+  console.log("[v0] Contact API called")
 
-    console.log("[v0] Environment variables check:", {
-      hasGmailUser: !!GMAIL_USER,
-      hasGmailPassword: !!GMAIL_APP_PASSWORD,
-      hasContactEmail: !!CONTACT_TO_EMAIL,
-      gmailUser: GMAIL_USER ? `${GMAIL_USER.substring(0, 3)}...` : "undefined",
-      contactEmail: CONTACT_TO_EMAIL ? `${CONTACT_TO_EMAIL.substring(0, 3)}...` : "undefined",
+  try {
+    const RESEND_API_KEY = process.env.RESEND_API_KEY
+    const CONTACT_TO_EMAIL = process.env.CONTACT_TO_EMAIL
+    const CONTACT_FROM_EMAIL = process.env.CONTACT_FROM_EMAIL
+
+    console.log("[v0] Environment variables:", {
+      hasResendKey: !!RESEND_API_KEY,
+      resendKeyLength: RESEND_API_KEY?.length || 0,
+      hasContactToEmail: !!CONTACT_TO_EMAIL,
+      contactToEmail: CONTACT_TO_EMAIL,
+      hasContactFromEmail: !!CONTACT_FROM_EMAIL,
+      contactFromEmail: CONTACT_FROM_EMAIL,
     })
 
     const body = await req.json()
-    const { name, email, message, company, phone } = body || {}
+    console.log("[v0] Request body:", body)
 
-    console.log("[v0] Form submission received:", {
-      name,
-      email: email ? `${email.substring(0, 3)}...` : "undefined",
-      hasMessage: !!message,
-    })
+    const { name, email, message, company, phone } = body
 
     if (!name || !email || !message) {
-      console.log("[v0] Missing required fields")
-      return NextResponse.json({ ok: false, error: "Missing fields" }, { status: 400 })
+      console.log("[v0] Missing required fields:", { name: !!name, email: !!email, message: !!message })
+      return NextResponse.json({ ok: false, error: "Missing required fields" }, { status: 400 })
     }
 
-    const subject = `New contact form message from ${name}`
-    const text = [
-      `Name: ${name}`,
-      `Email: ${email}`,
-      company ? `Company: ${company}` : undefined,
-      phone ? `Phone: ${phone}` : undefined,
-      "",
-      message,
-    ]
-      .filter(Boolean)
-      .join("\n")
-    const html = `
-      <h2>New contact form message</h2>
-      <p><b>Name:</b> ${escapeHtml(name)}</p>
-      <p><b>Email:</b> ${escapeHtml(email)}</p>
-      ${company ? `<p><b>Company:</b> ${escapeHtml(company)}</p>` : ""}
-      ${phone ? `<p><b>Phone:</b> ${escapeHtml(phone)}</p>` : ""}
-      <p style="white-space:pre-wrap">${escapeHtml(message)}</p>
-    `
-
-    if (GMAIL_USER && GMAIL_APP_PASSWORD && CONTACT_TO_EMAIL) {
-      console.log("[v0] Attempting to send email via Gmail SMTP")
-
-      const transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false, // true for 465, false for other ports
-        auth: {
-          user: GMAIL_USER,
-          pass: GMAIL_APP_PASSWORD,
-        },
-        tls: {
-          rejectUnauthorized: false,
-        },
+    if (!RESEND_API_KEY || !CONTACT_TO_EMAIL || !CONTACT_FROM_EMAIL) {
+      console.log("[v0] Missing environment variables")
+      return NextResponse.json({
+        ok: true,
+        delivered: false,
+        reason: "Email not configured - missing environment variables",
       })
-
-      try {
-        await transporter.sendMail({
-          from: GMAIL_USER,
-          to: CONTACT_TO_EMAIL,
-          replyTo: email, // Allow replying directly to the form submitter
-          subject,
-          text,
-          html,
-        })
-        console.log("[v0] Email sent successfully")
-        return NextResponse.json({ ok: true, delivered: true })
-      } catch (emailError) {
-        console.error("[v0] Email sending failed with detailed error:", {
-          message: emailError.message,
-          code: emailError.code,
-          command: emailError.command,
-          response: emailError.response,
-          responseCode: emailError.responseCode,
-          stack: emailError.stack,
-        })
-        return NextResponse.json(
-          {
-            ok: false,
-            error: "Failed to send email via SMTP",
-            details: emailError.message,
-          },
-          { status: 500 },
-        )
-      }
     }
 
-    // Not configured: accept submission, mark not delivered
-    console.log("[v0] Email not configured - environment variables missing")
-    console.log("Contact message (email not configured):", { name, email, message, company, phone })
-    return NextResponse.json({ ok: true, delivered: false, reason: "email_not_configured" })
-  } catch (err) {
-    console.error("[v0] Contact API error:", err)
-    return NextResponse.json({ ok: false, error: "Failed to send email." }, { status: 500 })
-  }
-}
+    console.log("[v0] Initializing Resend...")
+    const resend = new Resend(RESEND_API_KEY)
 
-function escapeHtml(input: string) {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;")
-}
+    const emailData = {
+      from: CONTACT_FROM_EMAIL,
+      to: CONTACT_TO_EMAIL,
+      replyTo: email,
+      subject: `New contact form message from ${name}`,
+      html: `
+        <h2>New contact form message</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        ${company ? `<p><strong>Company:</strong> ${company}</p>` : ""}
+        ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ""}
+        <p><strong>Message:</strong></p>
+        <p style="white-space: pre-wrap;">${message}</p>
+      `,
+    }
 
-async function safeReadText(res: Response) {
-  try {
-    return await res.text()
-  } catch {
-    return ""
+    console.log("[v0] Sending email with data:", {
+      from: emailData.from,
+      to: emailData.to,
+      subject: emailData.subject,
+    })
+
+    const { data, error } = await resend.emails.send(emailData)
+
+    if (error) {
+      console.error("[v0] Resend API error:", error)
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Failed to send email",
+          details: error,
+        },
+        { status: 500 },
+      )
+    }
+
+    console.log("[v0] Email sent successfully:", data)
+    return NextResponse.json({ ok: true, delivered: true, emailId: data?.id })
+  } catch (error) {
+    console.error("[v0] Contact API error:", error)
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    )
   }
 }
