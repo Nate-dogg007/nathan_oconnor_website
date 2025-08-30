@@ -53,10 +53,15 @@ export async function POST(req: Request) {
       console.log("[v0] Attempting to send email via Gmail SMTP")
 
       const transporter = nodemailer.createTransport({
-        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false, // true for 465, false for other ports
         auth: {
           user: GMAIL_USER,
           pass: GMAIL_APP_PASSWORD,
+        },
+        tls: {
+          rejectUnauthorized: false,
         },
       })
 
