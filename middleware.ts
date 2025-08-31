@@ -122,14 +122,23 @@ export function middleware(req: NextRequest) {
 
     const persist = !!(consent.analytics || consent.ads);
 
-    // If legacy detected, we overwrite in base64url; otherwise we always write fresh anyway.
-    res.cookies.set("_digify", toB64Url(digify), {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/",
-      ...(persist ? { maxAge: 365 * 24 * 60 * 60 } : {}),
-    });
+    // _digify: readable by JS (client hook can decode it)
+res.cookies.set("_digify", toB64Url(digify), {
+  httpOnly: false, // <-- changed
+  secure: true,
+  sameSite: "lax",
+  path: "/",
+  ...(persist ? { maxAge: 365 * 24 * 60 * 60 } : {}),
+});
+
+// Mirror just the session id to a lightweight, readable cookie
+res.cookies.set("_digify_sid", sid, {
+  httpOnly: false,
+  secure: true,
+  sameSite: "lax",
+  path: "/",
+  maxAge: 30 * 60, // same as session
+});
 
     // Optional: convenience headers
     res.headers.set("x-dfy-visitor", digify.visitor_id);
