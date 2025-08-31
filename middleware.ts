@@ -102,16 +102,16 @@ export function middleware(req: NextRequest) {
     const persist = !!(consent.analytics || consent.ads);
 
     res.cookies.set(
-      "_digify",
-      encodeURIComponent(JSON.stringify(digify)),
-      {
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-        path: "/",
-        ...(persist ? { maxAge: 365 * 24 * 60 * 60 } : {}),
-      }
-    );
+  "_digify",
+  encodeURIComponent(JSON.stringify(digify)),
+  {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    ...(persist ? { maxAge: 365 * 24 * 60 * 60 } : {}),
+  }
+);
 
     // Optional convenience headers for client hooks
     res.headers.set("x-dfy-visitor", digify.visitor_id);
