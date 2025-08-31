@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 
-// 🟢 NEW: digify hook
+// Digify hook
 import { useDigifyAttribution } from "@/hooks/useDigifyAttribution"
 
 declare global {
@@ -75,7 +75,7 @@ export default function ContactPageClient() {
   const [company, setCompany] = useState("")
   const [website, setWebsite] = useState("") // honeypot
 
-  // 🟢 NEW: build digify attribution (visitor_id, session_id, FT/LT UTM & click IDs, plus hashed email/phone)
+  // Build digify attribution (visitor_id, session_id, FT/LT UTM & click IDs, plus hashed email/phone)
   const attrib = useDigifyAttribution(email, phone)
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -94,7 +94,6 @@ export default function ContactPageClient() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // 🟢 NEW: include attrib
         body: JSON.stringify({ name, email, message, company, phone, attrib }),
       })
       const data = await res.json().catch(() => ({}))
@@ -163,7 +162,14 @@ export default function ContactPageClient() {
               {/* Honeypot (hidden) */}
               <div className="hidden">
                 <Label htmlFor="website">Website</Label>
-                <Input id="website" name="website" autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} />
+                <Input
+                  id="website"
+                  name="website"
+                  autoComplete="off"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  tabIndex={-1}
+                />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -180,7 +186,13 @@ export default function ContactPageClient() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="company">Company (optional)</Label>
-                  <Input id="company" name="company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company Ltd" />
+                  <Input
+                    id="company"
+                    name="company"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                    placeholder="Company Ltd"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone (optional)</Label>
@@ -190,12 +202,31 @@ export default function ContactPageClient() {
 
               <div className="space-y-2">
                 <Label htmlFor="message">Message</Label>
-                <Textarea id="message" name="message" rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Tell me a bit about your goals..." required />
+                <Textarea
+                  id="message"
+                  name="message"
+                  rows={5}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Tell me a bit about your goals..."
+                  required
+                />
               </div>
 
-              {/* 🟢 OPTIONAL: if you ever POST to a non-JS endpoint, mirror attrib in hidden inputs
+              {/* Optional: mirror attrib as hidden inputs if you ever POST without JS
               {Object.entries(attrib).map(([k, v]) => (
                 <input key={k} type="hidden" name={k} value={v} />
               ))} */}
 
               <div className="pt-2">
+                <Button type="submit" disabled={loading} className="bg-[#FFA64C] text-[#101C3C] hover:bg-[#ff9f3a]">
+                  {loading ? "Sending…" : "Send message"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
