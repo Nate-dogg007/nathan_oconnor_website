@@ -1,89 +1,104 @@
-// /middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 
-// --- Capture config
+// --- Config
+const MAX_TOUCHES = 10;
 const UTM_KEYS = ["utm_source","utm_medium","utm_campaign","utm_term","utm_content"] as const;
 const CLICK_IDS = ["gclid","wbraid","gbraid","msclkid","fbclid","ttclid","uetmsclkid"] as const;
+const SEARCH_ENGINES = [
+  /(^|\.)google\./i, /(^|\.)bing\./i, /(^|\.)yahoo\./i, /(^|\.)duckduckgo\./i,
+  /(^|\.)baidu\./i, /(^|\.)yandex\./i, /(^|\.)ecosia\./i, /(^|\.)ask\./i
+];
 
-// --- Time helpers
 const nowIso = () => new Date().toISOString();
 const newId  = () => (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)) as string;
 
-// --- Base64url helpers (Edge-safe)
+// --- base64url helpers (Edge-safe)
 function toB64Url(obj: any): string {
   const json = typeof obj === "string" ? obj : JSON.stringify(obj);
   const bytes = new TextEncoder().encode(json);
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  const b64 = btoa(binary);
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  let bin = ""; for (let i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 }
-function fromB64Url<T = any>(s: string): T {
-  const pad = "=".repeat((4 - (s.length % 4)) % 4);
-  const b64 = s.replace(/-/g, "+").replace(/_/g, "/") + pad;
-  const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  const json = new TextDecoder().decode(bytes);
-  return JSON.parse(json) as T;
+function fromB64Url<T=any>(s: string): T | null {
+  try {
+    const pad = "=".repeat((4 - (s.length % 4)) % 4);
+    const b64 = s.replace(/-/g,"+").replace(/_/g,"/")+pad;
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    const json = new TextDecoder().decode(bytes);
+    return JSON.parse(json);
+  } catch { return null; }
 }
 
-// --- Legacy tolerant JSON cookie reader (handles %7B and %257B etc.)
-function readLegacyJson<T = any>(raw: string): T | null {
-  let s: string = raw;
-  for (let i = 0; i < 3; i++) {
+// read both base64url and legacy percent-encoded JSON safely
+function readCookieJson<T=any>(req: NextRequest, name: string): T | null {
+  const raw = req.cookies.get(name)?.value; if (!raw) return null;
+  // try base64url
+  const b64 = fromB64Url<T>(raw); if (b64) return b64;
+  // try legacy (%-encoded / plain)
+  let s = raw;
+  for (let i=0;i<3;i++){
     try { return JSON.parse(s); } catch {}
     try { s = decodeURIComponent(s); } catch { break; }
   }
   return null;
 }
 
-// --- Read cookie supporting both base64url (new) and legacy percent-encoded JSON
-function readDigifyCookie<T = any>(req: NextRequest, name: string): { value: T | null; legacy: boolean } {
-  const raw = req.cookies.get(name)?.value;
-  if (!raw) return { value: null, legacy: false };
-
-  // Heuristic: base64url tokens are [-_A-Za-z0-9] without % signs
-  const looksB64Url = /^[A-Za-z0-9\-_]+$/.test(raw);
-  if (looksB64Url) {
-    try {
-      const v = fromB64Url<T>(raw);
-      return { value: v, legacy: false };
-    } catch { /* fall through to legacy */ }
-  }
-
-  const legacyVal = readLegacyJson<T>(raw);
-  if (legacyVal) return { value: legacyVal, legacy: true };
-
-  return { value: null, legacy: false };
-}
-
 function readConsent(req: NextRequest) {
-  // consent_state also may be legacy; tolerate both
-  const { value: c } = readDigifyCookie<any>(req, "consent_state");
-  const granted = (k: string) => c?.[k] === "granted" || c?.[k] === true;
+  const c = readCookieJson<any>(req, "consent_state") || {};
+  const g = (k:string) => c?.[k] === "granted" || c?.[k] === true;
   return {
-    analytics: granted("analytics_storage"),
-    ads: granted("ad_storage") || granted("ad_user_data") || granted("ad_personalization"),
+    analytics: g("analytics_storage"),
+    ads: g("ad_storage") || g("ad_user_data") || g("ad_personalization"),
   };
 }
 
-function parseAttribution(url: URL, referrer: string | null) {
-  const at: Record<string, string> = {};
-  for (const k of UTM_KEYS) { const v = url.searchParams.get(k); if (v) at[k] = v; }
-  for (const k of CLICK_IDS) { const v = url.searchParams.get(k); if (v) at[k] = v; }
-  if (referrer) at.referrer = referrer; // header is 'referer'
-  at.landing_page = url.pathname + (url.search || "");
-  return at;
+// Channel/Source/Medium classification
+function classify(url: URL, referrer: string | null, selfHost: string) {
+  const qp = url.searchParams;
+  const hasUTM = !!qp.get("utm_source");
+  const clickId = CLICK_IDS.map(k=>qp.get(k)).find(Boolean);
+
+  if (hasUTM) {
+    return {
+      ch: "utm",
+      src: qp.get("utm_source") || "unknown",
+      med: qp.get("utm_medium") || (clickId ? "cpc" : "campaign"),
+      cmp: qp.get("utm_campaign") || undefined,
+      term: qp.get("utm_term") || undefined,
+      cnt: qp.get("utm_content") || undefined,
+    };
+  }
+
+  const ref = referrer ? new URL(referrer) : null;
+  const isSelf = ref && ref.hostname.replace(/^www\./,"") === selfHost.replace(/^www\./,"");
+
+  if (!ref || isSelf) {
+    // Direct: no external referrer
+    return { ch: "direct", src: "(direct)", med: "(none)" };
+  }
+
+  // Organic if known search engine
+  const isSearch = SEARCH_ENGINES.some(rx => rx.test(ref!.hostname));
+  if (isSearch) {
+    // Source is the engine host sans www.
+    const src = ref.hostname.replace(/^www\./,"").split(".")[0];
+    return { ch: "organic", src, med: "organic" };
+  }
+
+  // Referral
+  return { ch: "referral", src: ref.hostname.replace(/^www\./,""), med: "referral" };
 }
 
 export function middleware(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const res = NextResponse.next();
+    const selfHost = url.hostname.replace(/^www\./,"");
 
-    // --- 1) _digify_session (essential)
-    const { value: existingSession } = readDigifyCookie<any>(req, "_digify_session");
+    // --- Session cookies
+    const existingSession = readCookieJson<any>(req, "_digify_session") || {};
     const THIRTY_MIN = 30 * 60 * 1000;
     const now = Date.now();
 
@@ -92,55 +107,59 @@ export function middleware(req: NextRequest) {
     let lastAt: string = existingSession?.lastAt;
 
     const lastAtMs = lastAt ? new Date(lastAt).getTime() : NaN;
-    const isStale = !lastAt || Number.isNaN(lastAtMs) || now - lastAtMs > THIRTY_MIN;
+    const stale = !lastAt || Number.isNaN(lastAtMs) || now - lastAtMs > THIRTY_MIN;
 
-    if (!sid || isStale) {
-      sid = newId();
-      startedAt = nowIso();
-    }
+    if (!sid || stale) { sid = newId(); startedAt = nowIso(); }
     lastAt = nowIso();
 
+    // HttpOnly session
     res.cookies.set("_digify_session", toB64Url({ sid, startedAt, lastAt }), {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 30 * 60,
+      httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 30*60
+    });
+    // JS-readable mirror
+    res.cookies.set("_digify_sid", sid, {
+      httpOnly: false, secure: true, sameSite: "lax", path: "/", maxAge: 30*60
     });
 
-    // --- 2) _digify (respect consent)
+    // --- Attribution (all touches)
     const consent = readConsent(req);
-    const incoming = parseAttribution(url, req.headers.get("referer"));
-    const read = readDigifyCookie<any>(req, "_digify");
-
-    const existing = read.value || {};
-    const digify: any = {
-      visitor_id: existing.visitor_id || newId(),
-      first_touch: existing.first_touch || (Object.keys(incoming).length ? { ...incoming, ts: nowIso() } : undefined),
-      last_touch: Object.keys(incoming).length ? { ...incoming, ts: nowIso() } : (existing.last_touch || undefined),
-    };
-
     const persist = !!(consent.analytics || consent.ads);
 
-    // _digify: readable by JS (client hook can decode it)
-res.cookies.set("_digify", toB64Url(digify), {
-  httpOnly: false, // <-- changed
-  secure: true,
-  sameSite: "lax",
-  path: "/",
-  ...(persist ? { maxAge: 365 * 24 * 60 * 60 } : {}),
-});
+    const existing = readCookieJson<any>(req, "_digify") || {};
+    const touches: any[] = Array.isArray(existing.touches) ? existing.touches.slice() : [];
 
-// Mirror just the session id to a lightweight, readable cookie
-res.cookies.set("_digify_sid", sid, {
-  httpOnly: false,
-  secure: true,
-  sameSite: "lax",
-  path: "/",
-  maxAge: 30 * 60, // same as session
-});
+    const base = classify(url, req.headers.get("referer"), selfHost);
+    // Build a minimal touch object to limit cookie size
+    const touch: any = {
+      ts: nowIso(),
+      lp: url.pathname + (url.search || ""),
+      src: base.src,
+      med: base.med,
+      ch: base.ch,
+    };
+    if (base.cmp)  touch.cmp = base.cmp;
+    if (base.term) touch.term = base.term;
+    if (base.cnt)  touch.cnt = base.cnt;
+    for (const k of CLICK_IDS) { const v = url.searchParams.get(k); if (v) touch[k] = v; }
 
-    // Optional: convenience headers
+    // Only append if it’s a meaningful navigation (avoid exact duplicates)
+    const last = touches[touches.length - 1];
+    const isDup = last && last.lp === touch.lp && last.src === touch.src && last.med === touch.med && last.ch === touch.ch;
+    if (!isDup) touches.push(touch);
+    while (touches.length > MAX_TOUCHES) touches.shift();
+
+    const digify = {
+      visitor_id: existing.visitor_id || newId(),
+      touches,
+    };
+
+    // JS-readable attribution (session-only until consent)
+    res.cookies.set("_digify", toB64Url(digify), {
+      httpOnly: false, secure: true, sameSite: "lax", path: "/",
+      ...(persist ? { maxAge: 365*24*60*60 } : {})
+    });
+
+    // Optional headers
     res.headers.set("x-dfy-visitor", digify.visitor_id);
     res.headers.set("x-dfy-session", sid);
 
