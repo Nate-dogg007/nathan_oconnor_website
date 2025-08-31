@@ -1,253 +1,173 @@
 import type { Metadata } from "next"
-import { BASE_URL } from "@/lib/constants"
 
 export const metadata: Metadata = {
   title: "Cookie Policy",
-  description:
-    "Understand Nathan O'Connor's Cookie Policy, including how cookies are used and mapped to Google Consent Mode v2 categories for privacy compliance.",
-  alternates: {
-    canonical: `${BASE_URL}/cookies`,
-  },
-  openGraph: {
-    title: "Cookie Policy | Nathan O'Connor",
-    description:
-      "Understand Nathan O'Connor's Cookie Policy, including how cookies are used and mapped to Google Consent Mode v2 categories for privacy compliance.",
-    url: `${BASE_URL}/cookies`,
-    siteName: "Nathan O'Connor",
-    images: [
-      {
-        url: `${BASE_URL}/hero-photo.png`, // Use a relevant image
-        width: 800,
-        height: 600,
-        alt: "Cookie Policy",
-      },
-    ],
-    locale: "en_GB",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Cookie Policy | Nathan O'Connor",
-    description:
-      "Understand Nathan O'Connor's Cookie Policy, including how cookies are used and mapped to Google Consent Mode v2 categories for privacy compliance.",
-    creator: "@yourtwitterhandle",
-    images: [`${BASE_URL}/hero-photo.png`],
-  },
+  description: "Learn about the cookies we use on our website and how they help improve your experience.",
 }
 
 export default function CookiesPage() {
   return (
-    <div className="bg-white py-16 sm:py-24">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Cookie Policy (Consent Mode v2 Mapping)
-          </h1>
-          <div className="mt-4 text-lg text-gray-600">
-            <p>
-              <strong>Effective Date:</strong>{" "}
-              {new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" })}
-            </p>
-            <p>
-              <strong>Business Name:</strong> Nathan O'Connor
-            </p>
-            <p>
-              <strong>Contact Email:</strong>{" "}
-              <a href="mailto:info@nathanoconnor.co.uk" className="text-blue-600 hover:text-blue-800">
-                info@nathanoconnor.co.uk
-              </a>
-            </p>
-          </div>
+    <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="prose prose-gray max-w-none">
+        <h1 className="text-4xl font-bold text-gray-900 mb-8">Cookie Policy</h1>
 
-          <p className="mt-6 text-gray-700">
-            This Cookie Policy outlines how I use cookies and maps them to the categories defined under Google Consent
-            Mode v2 to comply with GDPR and other privacy regulations.
+        <p className="text-lg text-gray-600 mb-8">
+          This Cookie Policy explains how Nathan O'Connor ("we", "us", or "our") uses cookies and similar technologies
+          when you visit our website at nathanoconnor.co.uk (the "Service").
+        </p>
+
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">What Are Cookies?</h2>
+          <p className="text-gray-700 mb-4">
+            Cookies are small text files that are placed on your device when you visit our website. They help us provide
+            you with a better experience by remembering your preferences and understanding how you use our site.
+          </p>
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Cookie Consent Management</h2>
+          <p className="text-gray-700 mb-4">
+            We use Cookiebot to manage your cookie preferences and ensure compliance with privacy regulations. You can
+            update your cookie preferences at any time using the cookie banner or by contacting us.
+          </p>
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Types of Cookies We Use</h2>
+
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Strictly Necessary Cookies</h3>
+              <p className="text-gray-700 mb-4">
+                These cookies are essential for the website to function properly and cannot be disabled.
+              </p>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-2">Cookiebot Consent Cookies</h4>
+                <p className="text-sm text-gray-600 mb-2">
+                  Used to store your cookie consent preferences and ensure compliance with privacy regulations.
+                </p>
+                <p className="text-xs text-gray-500">Duration: 1 year</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Analytics Cookies</h3>
+              <p className="text-gray-700 mb-4">
+                These cookies help us understand how visitors interact with our website by collecting and reporting
+                information anonymously.
+              </p>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-2">Google Analytics / Google Tag Manager</h4>
+                <p className="text-sm text-gray-600 mb-2">
+                  Used to analyze website traffic and user behavior to improve our services.
+                </p>
+                <p className="text-xs text-gray-500">Duration: Up to 2 years</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Marketing Cookies</h3>
+              <p className="text-gray-700 mb-4">
+                These cookies are used to track visitors across websites to display relevant advertisements.
+              </p>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-2">Advertising and Remarketing</h4>
+                <p className="text-sm text-gray-600 mb-2">
+                  Used to show you relevant ads based on your interests and browsing behavior.
+                </p>
+                <p className="text-xs text-gray-500">Duration: Varies, typically up to 2 years</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Digify Cookies</h2>
+          <p className="text-gray-700 mb-4">
+            We use first-party cookies to record session continuity and, with your consent, campaign attribution data.
           </p>
 
-          <div className="mt-12 space-y-12">
-            {/* Consent Mode v2 Categories */}
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900">Consent Mode v2 Categories & Cookies</h2>
-              <p className="mt-4 text-gray-700">
-                Google Consent Mode v2 introduces the following consent categories. I use these to manage how cookies
-                are set based on your preferences:
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-gray-900 mb-2">_digify_session / _digify_sid</h4>
+              <p className="text-sm text-gray-600 mb-2">
+                Strictly necessary for ensuring form submissions and preventing spam.
               </p>
-            </section>
+              <p className="text-xs text-gray-500">Duration: Expires after 30 minutes</p>
+            </div>
 
-            {/* Essential Cookies */}
-            <section>
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">🛡️</span>
-                <h3 className="text-xl font-bold text-gray-900">a) Essential Cookies (`security_storage`)</h3>
-              </div>
-              <p className="mt-4 text-gray-700">
-                These cookies are always active and are required for the basic operation of the site, such as security
-                and network management.
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-gray-900 mb-2">_digify</h4>
+              <p className="text-sm text-gray-600 mb-2">
+                Stores non-personal attribution data (e.g. UTM parameters, referrer). Session-only until consent is
+                given; may persist up to 1 year if you consent to analytics/advertising cookies.
               </p>
-              <div className="mt-4">
-                <p className="font-semibold text-gray-900">Examples:</p>
-                <ul className="mt-2 list-disc list-inside space-y-1 text-gray-700">
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">__cf_bm</code> – Cloudflare bot protection
-                  </li>
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">csrftoken</code> – CSRF token for form
-                    security
-                  </li>
-                </ul>
-              </div>
-            </section>
-
-            {/* Analytics Cookies */}
-            <section>
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">📊</span>
-                <h3 className="text-xl font-bold text-gray-900">b) Analytics Cookies (`analytics_storage`)</h3>
-              </div>
-              <p className="mt-4 text-gray-700">
-                Used to collect information about how visitors use my site, allowing me to improve performance and user
-                experience.
-              </p>
-              <div className="mt-4">
-                <p className="font-semibold text-gray-900">Examples:</p>
-                <ul className="mt-2 list-disc list-inside space-y-1 text-gray-700">
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">_ga</code> – Google Analytics user
-                    identifier
-                  </li>
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">_ga_{"<container-id>"}</code> – Session
-                    persistence
-                  </li>
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">_gid</code> – Tracks user behavior
-                  </li>
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">_gat</code> – Limits request rates
-                  </li>
-                </ul>
-              </div>
-            </section>
-
-            {/* Advertising Cookies */}
-            <section>
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">🎯</span>
-                <h3 className="text-xl font-bold text-gray-900">c) Advertising Cookies (`ad_storage`)</h3>
-              </div>
-              <p className="mt-4 text-gray-700">
-                Used to deliver relevant ads and measure their effectiveness, including tracking conversions and
-                building remarketing audiences.
-              </p>
-              <div className="mt-4">
-                <p className="font-semibold text-gray-900">Examples:</p>
-                <ul className="mt-2 list-disc list-inside space-y-1 text-gray-700">
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">gclid</code> – Google Click Identifier
-                  </li>
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">gcl_au</code> – Google Ads remarketing
-                  </li>
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">IDE</code> – DoubleClick for advertising
-                  </li>
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">test_cookie</code> – Used to test if the
-                    browser supports cookies
-                  </li>
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">conversion_linker</code> – Helps attribute
-                    conversions across domains
-                  </li>
-                </ul>
-              </div>
-            </section>
-
-            {/* Functional Cookies */}
-            <section>
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">⚙️</span>
-                <h3 className="text-xl font-bold text-gray-900">d) Functional Cookies (`functionality_storage`)</h3>
-              </div>
-              <p className="mt-4 text-gray-700">
-                Enable the website to remember choices you make and provide enhanced, more personal features.
-              </p>
-              <div className="mt-4">
-                <p className="font-semibold text-gray-900">Examples:</p>
-                <ul className="mt-2 list-disc list-inside space-y-1 text-gray-700">
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">hubspotutk</code> – HubSpot user tracking
-                  </li>
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">messagesUtk</code> – HubSpot chat sessions
-                  </li>
-                </ul>
-              </div>
-            </section>
-
-            {/* Personalisation Cookies */}
-            <section>
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">🎨</span>
-                <h3 className="text-xl font-bold text-gray-900">
-                  e) Personalisation Cookies (`personalization_storage`)
-                </h3>
-              </div>
-              <p className="mt-4 text-gray-700">
-                Used to deliver personalized content based on your interactions or preferences.
-              </p>
-              <div className="mt-4">
-                <p className="font-semibold text-gray-900">Examples:</p>
-                <ul className="mt-2 list-disc list-inside space-y-1 text-gray-700">
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">lang</code> – Language settings
-                  </li>
-                  <li>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-sm">VISITOR_INFO1_LIVE</code> – YouTube viewer
-                    preferences
-                  </li>
-                </ul>
-              </div>
-            </section>
-
-            {/* Managing Preferences */}
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900">Managing Your Preferences</h2>
-              <p className="mt-4 text-gray-700">
-                When you first visit my website, you are prompted to choose your cookie preferences using our Consent
-                Management Platform (CMP) powered by <strong>CookieYes</strong>. You can update your preferences at any
-                time.
-              </p>
-            </section>
-
-            {/* Updates */}
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900">Updates</h2>
-              <p className="mt-4 text-gray-700">
-                I may update this policy from time to time. Any changes will be reflected on this page with an updated
-                effective date.
-              </p>
-            </section>
-
-            {/* Contact */}
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900">Contact</h2>
-              <p className="mt-4 text-gray-700">
-                If you have any questions about my Cookie Policy or how your data is used, please contact:
-              </p>
-              <div className="mt-4 text-gray-700">
-                <p>
-                  <strong>Nathan O'Connor</strong>
-                </p>
-                <p>
-                  Email:{" "}
-                  <a href="mailto:info@nathanoconnor.co.uk" className="text-blue-600 hover:text-blue-800">
-                    info@nathanoconnor.co.uk
-                  </a>
-                </p>
-              </div>
-            </section>
+              <p className="text-xs text-gray-500">Duration: Session-only until consent, up to 1 year with consent</p>
+            </div>
           </div>
+
+          <div className="mt-4 p-4 bg-green-50 rounded-lg">
+            <p className="text-sm text-gray-700">
+              <strong>Privacy Note:</strong> No personal data is stored in these cookies. Any identifiers are
+              randomised.
+            </p>
+          </div>
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Managing Your Cookie Preferences</h2>
+          <p className="text-gray-700 mb-4">You can control and manage cookies in several ways:</p>
+          <ul className="list-disc list-inside text-gray-700 space-y-2 mb-4">
+            <li>Use our cookie consent banner when you first visit our website</li>
+            <li>Adjust your browser settings to block or delete cookies</li>
+            <li>Use browser extensions that block tracking cookies</li>
+            <li>Contact us directly to discuss your preferences</li>
+          </ul>
+          <p className="text-gray-700">
+            Please note that blocking certain cookies may impact your experience on our website and limit some
+            functionality.
+          </p>
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Third-Party Cookies</h2>
+          <p className="text-gray-700 mb-4">
+            Some cookies on our website are set by third-party services. We do not control these cookies, and you should
+            check the relevant third party's website for more information about their cookies and how to manage them.
+          </p>
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Updates to This Policy</h2>
+          <p className="text-gray-700 mb-4">
+            We may update this Cookie Policy from time to time to reflect changes in our practices or for other
+            operational, legal, or regulatory reasons. We encourage you to review this policy periodically.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Contact Us</h2>
+          <p className="text-gray-700 mb-4">
+            If you have any questions about our use of cookies or this Cookie Policy, please contact us:
+          </p>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-gray-700">
+              <strong>Email:</strong> info@nathanoconnor.co.uk
+              <br />
+              <strong>Website:</strong> nathanoconnor.co.uk
+            </p>
+          </div>
+        </section>
+
+        <div className="mt-12 pt-8 border-t border-gray-200">
+          <p className="text-sm text-gray-500">
+            Last updated:{" "}
+            {new Date().toLocaleDateString("en-GB", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </p>
         </div>
       </div>
     </div>
