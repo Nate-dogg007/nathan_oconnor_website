@@ -58,10 +58,10 @@ function readConsent(req: NextRequest) {
 
 function classify(url: URL, referrer: string | null, selfHost: string) {
   const qp = url.searchParams;
-  const hasUTM = !!qp.get("utm_source");
-  const clickId = CLICK_IDS.map(k=>qp.get(k)).find(Boolean);
+  const clickId = CLICK_IDS.map(k => qp.get(k)).find(Boolean);
 
-  if (hasUTM) {
+  // 1) If UTMs are present → use them
+  if (qp.get("utm_source")) {
     return {
       ch: "utm",
       src: qp.get("utm_source") || "unknown",
@@ -72,19 +72,32 @@ function classify(url: URL, referrer: string | null, selfHost: string) {
     };
   }
 
-  const ref = referrer ? new URL(referrer) : null;
-  const isSelf = ref && ref.hostname.replace(/^www\./,"") === selfHost.replace(/^www\./,"");
+  // 2) If a click ID is present without UTMs → treat as paid/cpc
+  if (clickId) {
+    return {
+      ch: "paid",
+      src: "ad_platform",  // you could make this smarter (google/ms/bing/fb) if you like
+      med: "cpc",
+    };
+  }
 
-  if (!ref || isSelf) return { ch: "direct", src: "(direct)", med: "(none)" };
+  // 3) Otherwise classify by referrer
+  const ref = referrer ? new URL(referrer) : null;
+  const isSelf = ref && ref.hostname.replace(/^www\./, "") === selfHost.replace(/^www\./, "");
+
+  if (!ref || isSelf) {
+    return { ch: "direct", src: "(direct)", med: "(none)" };
+  }
 
   const isSearch = SEARCH_ENGINES.some(rx => rx.test(ref!.hostname));
   if (isSearch) {
-    const src = ref.hostname.replace(/^www\./,"").split(".")[0];
+    const src = ref.hostname.replace(/^www\./, "").split(".")[0];
     return { ch: "organic", src, med: "organic" };
   }
 
-  return { ch: "referral", src: ref.hostname.replace(/^www\./,""), med: "referral" };
+  return { ch: "referral", src: ref.hostname.replace(/^www\./, ""), med: "referral" };
 }
+
 
 function isTrackablePath(pathname: string): boolean {
   if (IGNORE_PATH_PREFIXES.some(p => pathname.startsWith(p))) return false;
