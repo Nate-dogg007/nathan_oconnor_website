@@ -58,6 +58,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             gtag('js', new Date());
           `}
         </Script>
+
+        <Script src="/consent-shim.js" strategy="beforeInteractive" />
+        
       </head>
       <body>
         {GTM_ID ? (
