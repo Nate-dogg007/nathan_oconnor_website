@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// --- Config
+// ------- Config -------
 const MAX_TOUCHES = 10;
 const UTM_KEYS = ["utm_source","utm_medium","utm_campaign","utm_term","utm_content"] as const;
 const CLICK_IDS = ["gclid","wbraid","gbraid","msclkid","fbclid","ttclid","uetmsclkid"] as const;
@@ -9,10 +9,17 @@ const SEARCH_ENGINES = [
   /(^|\.)baidu\./i, /(^|\.)yandex\./i, /(^|\.)ecosia\./i, /(^|\.)ask\./i
 ];
 
+// File extensions and paths we DO NOT want to record as touches
+const ASSET_EXTS = [
+  ".js",".css",".map",".ico",".png",".jpg",".jpeg",".gif",".webp",".svg",".avif",
+  ".woff",".woff2",".ttf",".otf",".eot",".txt",".xml",".json"
+];
+const IGNORE_PATH_PREFIXES = ["/_next/","/assets/","/static/"];
+
+// ------- Helpers -------
 const nowIso = () => new Date().toISOString();
 const newId  = () => (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)) as string;
 
-// --- base64url helpers (Edge-safe)
 function toB64Url(obj: any): string {
   const json = typeof obj === "string" ? obj : JSON.stringify(obj);
   const bytes = new TextEncoder().encode(json);
@@ -31,17 +38,12 @@ function fromB64Url<T=any>(s: string): T | null {
   } catch { return null; }
 }
 
-// read both base64url and legacy percent-encoded JSON safely
+// Read cookie that may be base64url (new) or percent-encoded JSON (legacy)
 function readCookieJson<T=any>(req: NextRequest, name: string): T | null {
   const raw = req.cookies.get(name)?.value; if (!raw) return null;
-  // try base64url
   const b64 = fromB64Url<T>(raw); if (b64) return b64;
-  // try legacy (%-encoded / plain)
   let s = raw;
-  for (let i=0;i<3;i++){
-    try { return JSON.parse(s); } catch {}
-    try { s = decodeURIComponent(s); } catch { break; }
-  }
+  for (let i=0;i<3;i++){ try { return JSON.parse(s); } catch {} try { s = decodeURIComponent(s); } catch { break; } }
   return null;
 }
 
@@ -54,7 +56,6 @@ function readConsent(req: NextRequest) {
   };
 }
 
-// Channel/Source/Medium classification
 function classify(url: URL, referrer: string | null, selfHost: string) {
   const qp = url.searchParams;
   const hasUTM = !!qp.get("utm_source");
@@ -74,25 +75,31 @@ function classify(url: URL, referrer: string | null, selfHost: string) {
   const ref = referrer ? new URL(referrer) : null;
   const isSelf = ref && ref.hostname.replace(/^www\./,"") === selfHost.replace(/^www\./,"");
 
-  if (!ref || isSelf) {
-    // Direct: no external referrer
-    return { ch: "direct", src: "(direct)", med: "(none)" };
-  }
+  if (!ref || isSelf) return { ch: "direct", src: "(direct)", med: "(none)" };
 
-  // Organic if known search engine
   const isSearch = SEARCH_ENGINES.some(rx => rx.test(ref!.hostname));
   if (isSearch) {
-    // Source is the engine host sans www.
     const src = ref.hostname.replace(/^www\./,"").split(".")[0];
     return { ch: "organic", src, med: "organic" };
   }
 
-  // Referral
   return { ch: "referral", src: ref.hostname.replace(/^www\./,""), med: "referral" };
 }
 
+function isTrackablePath(pathname: string): boolean {
+  if (IGNORE_PATH_PREFIXES.some(p => pathname.startsWith(p))) return false;
+  if (ASSET_EXTS.some(ext => pathname.endsWith(ext))) return false;
+  // specifically ignore the consent shim
+  if (pathname === "/consent-shim.js") return false;
+  return true;
+}
+
+// ------- Middleware -------
 export function middleware(req: NextRequest) {
   try {
+    // Only process GET navigations (avoid POST/OPTIONS noise)
+    if (req.method !== "GET") return NextResponse.next();
+
     const url = new URL(req.url);
     const res = NextResponse.next();
     const selfHost = url.hostname.replace(/^www\./,"");
@@ -112,11 +119,11 @@ export function middleware(req: NextRequest) {
     if (!sid || stale) { sid = newId(); startedAt = nowIso(); }
     lastAt = nowIso();
 
-    // HttpOnly session
+    // HttpOnly session (essential)
     res.cookies.set("_digify_session", toB64Url({ sid, startedAt, lastAt }), {
       httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 30*60
     });
-    // JS-readable mirror
+    // JS-readable session id mirror
     res.cookies.set("_digify_sid", sid, {
       httpOnly: false, secure: true, sameSite: "lax", path: "/", maxAge: 30*60
     });
@@ -128,25 +135,30 @@ export function middleware(req: NextRequest) {
     const existing = readCookieJson<any>(req, "_digify") || {};
     const touches: any[] = Array.isArray(existing.touches) ? existing.touches.slice() : [];
 
-    const base = classify(url, req.headers.get("referer"), selfHost);
-    // Build a minimal touch object to limit cookie size
-    const touch: any = {
-      ts: nowIso(),
-      lp: url.pathname + (url.search || ""),
-      src: base.src,
-      med: base.med,
-      ch: base.ch,
-    };
-    if (base.cmp)  touch.cmp = base.cmp;
-    if (base.term) touch.term = base.term;
-    if (base.cnt)  touch.cnt = base.cnt;
-    for (const k of CLICK_IDS) { const v = url.searchParams.get(k); if (v) touch[k] = v; }
+    // Filter: only track actual page paths
+    if (isTrackablePath(url.pathname)) {
+      const base = classify(url, req.headers.get("referer"), selfHost);
 
-    // Only append if it’s a meaningful navigation (avoid exact duplicates)
-    const last = touches[touches.length - 1];
-    const isDup = last && last.lp === touch.lp && last.src === touch.src && last.med === touch.med && last.ch === touch.ch;
-    if (!isDup) touches.push(touch);
-    while (touches.length > MAX_TOUCHES) touches.shift();
+      const touch: any = {
+        ts: nowIso(),
+        lp: url.pathname + (url.search || ""),
+        src: base.src,
+        med: base.med,
+        ch: base.ch,
+      };
+      if (base.cmp)  touch.cmp = base.cmp;
+      if (base.term) touch.term = base.term;
+      if (base.cnt)  touch.cnt = base.cnt;
+      for (const k of CLICK_IDS) {
+        const v = url.searchParams.get(k);
+        if (v) touch[k] = v;
+      }
+
+      const last = touches[touches.length - 1];
+      const isDup = last && last.lp === touch.lp && last.src === touch.src && last.med === touch.med && last.ch === touch.ch;
+      if (!isDup) touches.push(touch);
+      while (touches.length > MAX_TOUCHES) touches.shift();
+    }
 
     const digify = {
       visitor_id: existing.visitor_id || newId(),
@@ -171,5 +183,6 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
+  // This matcher already skips Next static assets, but we still keep a path filter above for safety.
   matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"],
 };
