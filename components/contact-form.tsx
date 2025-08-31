@@ -9,6 +9,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 
+// 🟢 NEW: import the digify hook
+import { useDigifyAttribution } from "@/hooks/useDigifyAttribution"
+
 declare global {
   interface Window {
     dataLayer?: any[]
@@ -71,8 +74,10 @@ export default function ContactForm({ className }: Props) {
   const [company, setCompany] = useState("")
   const [phone, setPhone] = useState("")
   const [website, setWebsite] = useState("") // honeypot
-
   const [status, setStatus] = useState<{ type: "idle" | "success" | "error"; text?: string }>({ type: "idle" })
+
+  // 🟢 NEW: build attribution payload (includes visitor_id, session_id, FT/LT UTM & click IDs, + email/phone hashes)
+  const attrib = useDigifyAttribution(email, phone)
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -90,16 +95,14 @@ export default function ContactForm({ className }: Props) {
       setStatus({ type: "idle" })
       await pushDLAttempt()
 
-      console.log("[v0] Making API call to /api/contact")
+      // 🟢 Include attrib in the payload
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, message, company, phone }),
+        body: JSON.stringify({ name, email, message, company, phone, attrib }),
       })
 
-      console.log("[v0] API response status:", res.status)
       const data = await res.json().catch(() => ({}))
-      console.log("[v0] API response data:", data)
 
       if (!res.ok || data?.ok === false) {
         await pushDLError()
@@ -151,19 +154,11 @@ export default function ContactForm({ className }: Props) {
   return (
     <section id="contact-form" className={className}>
       <div className="bg-[#101C3C]">
-        <div
-          className="
-            container mx-auto grid max-w-5xl grid-cols-1 gap-10 px-4 py-12
-            sm:px-6 md:grid-cols-2 md:py-16 lg:px-8
-          "
-        >
+        <div className="container mx-auto grid max-w-5xl grid-cols-1 gap-10 px-4 py-12 sm:px-6 md:grid-cols-2 md:py-16 lg:px-8">
           {/* Left column */}
           <div className="self-center text-white">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Ready to grow your business?</h2>
-            <p className="mt-2 text-white/85">
-              Get started today and see how my solutions can transform your business.
-            </p>
-
+            <p className="mt-2 text-white/85">Get started today and see how my solutions can transform your business.</p>
             <ul className="mt-6 space-y-3">
               {[
                 "Performance-driven marketing strategies",
@@ -189,14 +184,7 @@ export default function ContactForm({ className }: Props) {
                 {/* Honeypot */}
                 <div className="hidden">
                   <Label htmlFor="website">Website</Label>
-                  <Input
-                    id="website"
-                    name="website"
-                    autoComplete="off"
-                    value={website}
-                    onChange={(e) => setWebsite(e.target.value)}
-                    tabIndex={-1}
-                  />
+                  <Input id="website" name="website" autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} />
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -206,52 +194,30 @@ export default function ContactForm({ className }: Props) {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      name="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
+                    <Input id="email" type="email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="company">Company (optional)</Label>
-                    <Input
-                      id="company"
-                      name="company"
-                      value={company}
-                      onChange={(e) => setCompany(e.target.value)}
-                      placeholder="Company Ltd"
-                    />
+                    <Input id="company" name="company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company Ltd" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone (optional)</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+44 ..."
-                    />
+                    <Input id="phone" name="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+44 ..." />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="message">Message</Label>
-                  <Textarea
-                    id="message"
-                    name="message"
-                    rows={5}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Tell me a bit about your goals..."
-                    required
-                  />
+                  <Textarea id="message" name="message" rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Tell me a bit about your goals..." required />
                 </div>
+
+                {/* 🟢 OPTIONAL: Hidden digify fields if you ever POST to non-JS endpoints */}
+                {/* {Object.entries(attrib).map(([k, v]) => (
+                  <input key={k} type="hidden" name={k} value={v} />
+                ))} */}
 
                 <div className="pt-2">
                   <Button type="submit" disabled={loading} className="bg-[#E8730C] text-white hover:bg-[#D4620A]">
@@ -260,12 +226,7 @@ export default function ContactForm({ className }: Props) {
                 </div>
 
                 {status.type !== "idle" && (
-                  <p
-                    role="status"
-                    className={
-                      status.type === "success" ? "mt-3 text-sm text-emerald-700" : "mt-3 text-sm text-red-700"
-                    }
-                  >
+                  <p role="status" className={status.type === "success" ? "mt-3 text-sm text-emerald-700" : "mt-3 text-sm text-red-700"}>
                     {status.text}
                   </p>
                 )}
