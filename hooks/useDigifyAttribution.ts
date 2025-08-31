@@ -1,7 +1,6 @@
-// /hooks/useDigifyAttribution.ts
 "use client"
 import { useEffect, useMemo, useState } from "react"
-import { getDigify, sha256Hex } from "@/lib/digify"
+import { getDigify, sha256Hex, type DigifyCookie } from "@/lib/digify"
 
 export type HiddenAttribution = Record<string, string>
 
@@ -12,13 +11,20 @@ export function useDigifyAttribution(email?: string, phone?: string) {
   useEffect(() => {
     const { digify, sessionId } = getDigify()
     const out: HiddenAttribution = {}
+
     if (digify?.visitor_id) out["digify_visitor_id"] = digify.visitor_id
     if (sessionId) out["digify_session_id"] = sessionId
 
-    const ft = digify?.first_touch || ({} as any)
-    const lt = digify?.last_touch || ({} as any)
-    for (const [k, v] of Object.entries(ft)) if (typeof v === "string") out[`ft_${k}`] = v
-    for (const [k, v] of Object.entries(lt)) if (typeof v === "string") out[`lt_${k}`] = v
+    // Include a compact JSON of all touches for the API route / CRM
+    if (digify?.touches?.length) {
+      out["touches_json"] = JSON.stringify(digify.touches)
+      // Convenience: latest source/medium/channel (if you want columns in CRM)
+      const last = digify.touches[digify.touches.length - 1]
+      out["latest_source"] = last.src
+      out["latest_medium"] = last.med
+      out["latest_channel"] = last.ch
+    }
+
     setFields(out)
   }, [])
 
