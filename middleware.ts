@@ -16,9 +16,22 @@ function safeParseJson<T = any>(raw?: string | null): T | null {
   return null;
 }
 
-// Read a JSON cookie safely (handles encoded or plain JSON values)
 function readJsonCookie<T = any>(req: NextRequest, name: string): T | null {
-  return safeParseJson<T>(req.cookies.get(name)?.value ?? null);
+  const raw = req.cookies.get(name)?.value;
+  if (!raw) return null;
+
+  let s = raw;
+  for (let i = 0; i < 3; i++) {
+    try {
+      return JSON.parse(s);
+    } catch {}
+    try {
+      s = decodeURIComponent(s);
+    } catch {
+      break;
+    }
+  }
+  return null;
 }
 
 function readConsent(req: NextRequest) {
