@@ -56,34 +56,26 @@ function readConsent(req: NextRequest) {
   };
 }
 
-// Map click IDs to platforms (optional refinement)
 function platformFromClickId(url: URL): string | undefined {
-  if (url.searchParams.get("gclid")) return "google";
-  if (url.searchParams.get("gbraid") || url.searchParams.get("wbraid")) return "google";
+  if (url.searchParams.get("gclid") || url.searchParams.get("gbraid") || url.searchParams.get("wbraid")) return "google";
   if (url.searchParams.get("msclkid") || url.searchParams.get("uetmsclkid")) return "bing";
   if (url.searchParams.get("fbclid")) return "facebook";
   if (url.searchParams.get("ttclid")) return "tiktok";
+  if (url.searchParams.get("li_fat_id")) return "linkedin";
+  if (url.searchParams.get("twclid")) return "twitter";
   return undefined;
 }
 
 function classify(url: URL, referrer: string | null, selfHost: string) {
   const qp = url.searchParams;
-  const clickId = CLICK_IDS.map(k => qp.get(k)).find(Boolean);
+  const clickIdPresent =
+    qp.has("gclid") || qp.has("gbraid") || qp.has("wbraid") ||
+    qp.has("msclkid") || qp.has("uetmsclkid") ||
+    qp.has("fbclid") || qp.has("ttclid") ||
+    qp.has("li_fat_id") || qp.has("twclid");
 
-  // 1) UTMs take priority
-  if (qp.get("utm_source")) {
-    return {
-      ch: "utm",
-      src: qp.get("utm_source") || "unknown",
-      med: qp.get("utm_medium") || (clickId ? "cpc" : "campaign"),
-      cmp: qp.get("utm_campaign") || undefined,
-      term: qp.get("utm_term") || undefined,
-      cnt: qp.get("utm_content") || undefined,
-    };
-  }
-
-  // 2) Click ID present without UTMs → paid/cpc, set platform source if known
-  if (clickId) {
+  // 1) Click ID → paid / cpc; src from platform mapping
+  if (clickIdPresent) {
     return {
       ch: "paid",
       src: platformFromClickId(url) || "ad_platform",
@@ -91,9 +83,29 @@ function classify(url: URL, referrer: string | null, selfHost: string) {
     };
   }
 
-  // 3) Otherwise classify by referrer
+  // 2) Referrer-based (organic search / organic social / referral / direct)
   const ref = referrer ? new URL(referrer) : null;
   const isSelf = ref && ref.hostname.replace(/^www\./, "") === selfHost.replace(/^www\./, "");
+  if (!ref || isSelf) return { ch: "direct", src: "(direct)", med: "(none)" };
+
+  const host = ref.hostname.replace(/^www\./, "").toLowerCase();
+
+  // Organic search engines
+  const isSearch = SEARCH_ENGINES.some(rx => rx.test(ref.hostname));
+  if (isSearch) {
+    const engine = host.split(".")[0];
+    return { ch: "organic", src: engine, med: "organic" };
+  }
+
+  // Organic social
+  if (host.includes("facebook.com")) return { ch: "organic", src: "facebook", med: "social" };
+  if (host.includes("twitter.com") || host.includes("x.com")) return { ch: "organic", src: "twitter", med: "social" };
+  if (host.includes("linkedin.com")) return { ch: "organic", src: "linkedin", med: "social" };
+  if (host.includes("tiktok.com")) return { ch: "organic", src: "tiktok", med: "social" };
+
+  // Everything else → referral
+  return { ch: "referral", src: host, med: "referral" };
+}
 
   if (!ref || isSelf) {
     return { ch: "direct", src: "(direct)", med: "(none)" };
