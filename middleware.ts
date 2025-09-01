@@ -22,6 +22,8 @@ const ASSET_EXTS = [
 ];
 const IGNORE_PATH_PREFIXES = ["/_next/","/assets/","/static/"];
 
+const VISIT_PAGE_LIMIT = 20; // keep page_paths bounded for cookie size
+
 // ------- Helpers -------
 const nowIso = () => new Date().toISOString();
 const newId  = () => (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)) as string;
@@ -43,9 +45,9 @@ function fromB64Url<T=any>(s: string): T | null {
     return JSON.parse(json);
   } catch { return null; }
 }
+
 // Cap per-step time so a long idle tab doesn't explode totals
 const STEP_CAP_MS = 30 * 60 * 1000; // 30 minutes
-
 function clampStepDeltaMs(prevISO?: string, nowISO?: string) {
   if (!prevISO || !nowISO) return 0;
   const prev = new Date(prevISO).getTime();
@@ -53,7 +55,6 @@ function clampStepDeltaMs(prevISO?: string, nowISO?: string) {
   if (!Number.isFinite(prev) || !Number.isFinite(now) || now <= prev) return 0;
   return Math.min(now - prev, STEP_CAP_MS);
 }
-
 
 // Read cookie that may be base64url (new) or percent-encoded JSON (legacy)
 function readCookieJson<T=any>(req: NextRequest, name: string): T | null {
@@ -178,13 +179,46 @@ export function middleware(req: NextRequest) {
     if (isDocument && isNavigate && !isPrefetch && isTrackablePath(url.pathname)) {
       const base = classify(url, req.headers.get("referer"), selfHost);
 
+      // --- Visit-level aggregator (per current session)
+      // Reset the visit accumulator if the session id changed or it's the first time
+      if (existing.visit_sid !== sid) {
+        existing.visit_sid = sid;
+        existing.visit_pages = [] as string[];
+        existing.visit_total_ms = 0 as number;
+        existing.visit_last_ts = undefined as string | undefined;
+      }
+
+      // Compute bounded delta since previous page in this visit
+      const thisTsISO = nowIso();
+      if (existing.visit_last_ts) {
+        const stepMs = clampStepDeltaMs(existing.visit_last_ts, thisTsISO);
+        // Cap a single visit to 24h to be safe
+        existing.visit_total_ms = Math.min((existing.visit_total_ms || 0) + stepMs, 24 * 60 * 60 * 1000);
+      }
+      existing.visit_last_ts = thisTsISO;
+
+      // Maintain distinct ordered page list for the visit
+      const pages: string[] = Array.isArray(existing.visit_pages) ? existing.visit_pages : [];
+      const lastPage = pages[pages.length - 1];
+      if (lastPage !== url.pathname) {
+        pages.push(url.pathname);
+        // keep unique but preserve order; also bound length
+        const seen = new Set<string>();
+        const deduped: string[] = [];
+        for (const p of pages) if (!seen.has(p)) { deduped.push(p); seen.add(p); }
+        existing.visit_pages = deduped.slice(-VISIT_PAGE_LIMIT);
+      }
+
       // Build touch (no query string in lp)
       const touch: any = {
-        ts: nowIso(),
+        ts: thisTsISO,
         lp: url.pathname,
         src: base.src,
         med: base.med,
         ch: base.ch,
+        // 🟢 Per-visit fields stamped onto each touch
+        total_time_sec: Math.floor((existing.visit_total_ms || 0) / 1000),
+        page_paths: existing.visit_pages, // array of paths seen in this visit
       };
 
       // Attach UTMs as metadata only (do not override src/med/ch)
@@ -214,43 +248,20 @@ export function middleware(req: NextRequest) {
         touches.push(touch);
         while (touches.length > MAX_TOUCHES) touches.shift();
       }
-      // --- Visitor-level rollups ---
-      const prevTotalMs = (existing.total_time_sec ? existing.total_time_sec * 1000 : 0);
-      const lastTouchTs = touches.length > 1
-        ? touches[touches.length - 2]?.ts
-        : (existing.last_touch_ts as string | undefined);
-      
-      // Add bounded delta since the previous touch
-      const stepDeltaMs = clampStepDeltaMs(lastTouchTs, touches[touches.length - 1]?.ts);
-      const totalTimeMs = prevTotalMs + stepDeltaMs;
-      
-      // Distinct pages seen (lp is path-only, no query)
-      const distinctPages = new Set<string>(touches.map(t => t.lp));
-      const distinctPagesCount = distinctPages.size;
-      const multiPage = distinctPagesCount > 1;
-      
-      // Persist rollups back onto the existing structure
-      existing.total_time_sec = Math.floor(totalTimeMs / 1000);
-      existing.distinct_pages_count = distinctPagesCount;
-      existing.multi_page = multiPage;
-      existing.last_touch_ts = touches[touches.length - 1]?.ts;
-
     }
 
     const digify = {
-    visitor_id: existing.visitor_id || newId(),
-    touches,
-    // visitor-level rollups
-    total_time_sec: existing.total_time_sec || 0,
-    distinct_pages_count: existing.distinct_pages_count ?? new Set<string>(touches.map(t => t.lp)).size,
-    multi_page: typeof existing.multi_page === "boolean"
-      ? existing.multi_page
-      : (new Set<string>(touches.map(t => t.lp)).size > 1),
-    // internal pointer for next-step delta calc
-    last_touch_ts: existing.last_touch_ts || touches[touches.length - 1]?.ts,
+      visitor_id: existing.visitor_id || newId(),
+      touches,
+      // (Optionally keep some visit markers in the cookie so the next page can continue the visit totals)
+      visit_sid: existing.visit_sid,
+      visit_last_ts: existing.visit_last_ts,
+      visit_total_ms: existing.visit_total_ms,
+      visit_pages: existing.visit_pages,
     };
 
     // JS-readable attribution (session-only until consent)
+    const persist = !!(consent.analytics || consent.ads);
     res.cookies.set("_digify", toB64Url(digify), {
       httpOnly: false, secure: true, sameSite: "lax", path: "/",
       ...(persist ? { maxAge: 365*24*60*60 } : {})
