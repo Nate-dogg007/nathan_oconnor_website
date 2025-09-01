@@ -142,58 +142,62 @@ export function middleware(req: NextRequest) {
     });
 
     // --- Attribution (all touches)
-    const consent = readConsent(req);
-    const persist = !!(consent.analytics || consent.ads);
+const consent = readConsent(req);
+const persist = !!(consent.analytics || consent.ads);
 
-    const existing = readCookieJson<any>(req, "_digify") || {};
-    const touches: any[] = Array.isArray(existing.touches) ? existing.touches.slice() : [];
+const existing = readCookieJson<any>(req, "_digify") || {};
+const touches: any[] = Array.isArray(existing.touches) ? existing.touches.slice() : [];
 
-    // Filter: only track actual page paths
-    if (isTrackablePath(url.pathname)) {
-      const base = classify(url, req.headers.get("referer"), selfHost);
+// Only record real top-level navigations (skip prefetch, assets, RSC/data)
+const isDocument    = req.headers.get("sec-fetch-dest") === "document";
+const isNavigate    = req.headers.get("sec-fetch-mode") === "navigate" || req.headers.get("sec-fetch-user") === "?1";
+const isPrefetch    = req.headers.get("purpose") === "prefetch" || req.headers.get("x-middleware-prefetch") === "1";
 
-      const touch: any = {
-        ts: nowIso(),
-        lp: url.pathname + (url.search || ""),
-        src: base.src,
-        med: base.med,
-        ch: base.ch,
-      };
-      if (base.cmp)  touch.cmp = base.cmp;
-      if (base.term) touch.term = base.term;
-      if (base.cnt)  touch.cnt = base.cnt;
-      for (const k of CLICK_IDS) {
-        const v = url.searchParams.get(k);
-        if (v) touch[k] = v;
-      }
+if (isDocument && isNavigate && !isPrefetch && isTrackablePath(url.pathname)) {
+  const base = classify(url, req.headers.get("referer"), selfHost);
 
-      const last = touches[touches.length - 1];
-      const isDup = last && last.lp === touch.lp && last.src === touch.src && last.med === touch.med && last.ch === touch.ch;
-      if (!isDup) touches.push(touch);
-      while (touches.length > MAX_TOUCHES) touches.shift();
-    }
+  // ❌ Do NOT carry the query string into lp
+  const pathOnly = url.pathname;
 
-    const digify = {
-      visitor_id: existing.visitor_id || newId(),
-      touches,
-    };
+  const touch: any = {
+    ts: nowIso(),
+    lp: pathOnly,        // ← no query string
+    src: base.src,
+    med: base.med,
+    ch: base.ch,
+  };
+  if (base.cmp)  touch.cmp  = base.cmp;
+  if (base.term) touch.term = base.term;
+  if (base.cnt)  touch.cnt  = base.cnt;
 
-    // JS-readable attribution (session-only until consent)
-    res.cookies.set("_digify", toB64Url(digify), {
-      httpOnly: false, secure: true, sameSite: "lax", path: "/",
-      ...(persist ? { maxAge: 365*24*60*60 } : {})
-    });
+  // Still capture click IDs from the URL, but not in lp
+  for (const k of CLICK_IDS) {
+    const v = url.searchParams.get(k);
+    if (v) touch[k] = v;
+  }
 
-    // Optional headers
-    res.headers.set("x-dfy-visitor", digify.visitor_id);
-    res.headers.set("x-dfy-session", sid);
+  // Stronger de-dupe: treat immediate redirect/replace as the same touch
+  const last = touches[touches.length - 1];
+  const within2s = last ? (new Date(touch.ts).getTime() - new Date(last.ts).getTime()) < 2000 : false;
+  const sameAttrs = last && last.lp === touch.lp && last.src === touch.src && last.med === touch.med && last.ch === touch.ch;
 
-    return res;
-  } catch (err) {
-    console.error("[digify middleware] error:", err);
-    return NextResponse.next();
+  if (!(sameAttrs && within2s)) {
+    touches.push(touch);
+    while (touches.length > MAX_TOUCHES) touches.shift();
   }
 }
+
+const digify = {
+  visitor_id: existing.visitor_id || newId(),
+  touches,
+};
+
+// JS-readable attribution (session-only until consent)
+res.cookies.set("_digify", toB64Url(digify), {
+  httpOnly: false, secure: true, sameSite: "lax", path: "/",
+  ...(persist ? { maxAge: 365*24*60*60 } : {})
+});
+
 
 export const config = {
   // This matcher already skips Next static assets, but we still keep a path filter above for safety.
