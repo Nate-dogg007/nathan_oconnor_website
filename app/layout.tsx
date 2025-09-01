@@ -99,6 +99,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <GTMRouteEvents />
         </Suspense>
 
+        {/* NEW: track SPA route changes for digify */}
+        <DigifyRouteTracker />
+
         <div className="flex min-h-screen flex-col">
           <Header />
           <main className="flex-grow">{children}</main>
