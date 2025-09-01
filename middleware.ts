@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 // ------- Config -------
 const MAX_TOUCHES = 10;
+// (UTM_KEYS kept for reference; not used to classify)
 const UTM_KEYS = ["utm_source","utm_medium","utm_campaign","utm_term","utm_content"] as const;
-const CLICK_IDS = ["gclid","wbraid","gbraid","msclkid","fbclid","ttclid","uetmsclkid"] as const;
+// Include all click IDs you want to capture into touches:
+const CLICK_IDS = [
+  "gclid","wbraid","gbraid","msclkid","fbclid","ttclid","uetmsclkid",
+  "li_fat_id","twclid"
+] as const;
+
 const SEARCH_ENGINES = [
   /(^|\.)google\./i, /(^|\.)bing\./i, /(^|\.)yahoo\./i, /(^|\.)duckduckgo\./i,
   /(^|\.)baidu\./i, /(^|\.)yandex\./i, /(^|\.)ecosia\./i, /(^|\.)ask\./i
@@ -56,6 +62,7 @@ function readConsent(req: NextRequest) {
   };
 }
 
+// Map click IDs to platforms
 function platformFromClickId(url: URL): string | undefined {
   if (url.searchParams.get("gclid") || url.searchParams.get("gbraid") || url.searchParams.get("wbraid")) return "google";
   if (url.searchParams.get("msclkid") || url.searchParams.get("uetmsclkid")) return "bing";
@@ -66,6 +73,7 @@ function platformFromClickId(url: URL): string | undefined {
   return undefined;
 }
 
+// UTMs are descriptive only; they do not override channel/source/medium
 function classify(url: URL, referrer: string | null, selfHost: string) {
   const qp = url.searchParams;
   const clickIdPresent =
@@ -76,11 +84,7 @@ function classify(url: URL, referrer: string | null, selfHost: string) {
 
   // 1) Click ID → paid / cpc; src from platform mapping
   if (clickIdPresent) {
-    return {
-      ch: "paid",
-      src: platformFromClickId(url) || "ad_platform",
-      med: "cpc",
-    };
+    return { ch: "paid", src: platformFromClickId(url) || "ad_platform", med: "cpc" };
   }
 
   // 2) Referrer-based (organic search / organic social / referral / direct)
@@ -90,7 +94,7 @@ function classify(url: URL, referrer: string | null, selfHost: string) {
 
   const host = ref.hostname.replace(/^www\./, "").toLowerCase();
 
-  // Organic search engines
+  // Organic search
   const isSearch = SEARCH_ENGINES.some(rx => rx.test(ref.hostname));
   if (isSearch) {
     const engine = host.split(".")[0];
@@ -105,19 +109,6 @@ function classify(url: URL, referrer: string | null, selfHost: string) {
 
   // Everything else → referral
   return { ch: "referral", src: host, med: "referral" };
-}
-
-  if (!ref || isSelf) {
-    return { ch: "direct", src: "(direct)", med: "(none)" };
-  }
-
-  const isSearch = SEARCH_ENGINES.some(rx => rx.test(ref!.hostname));
-  if (isSearch) {
-    const src = ref.hostname.replace(/^www\./, "").split(".")[0];
-    return { ch: "organic", src, med: "organic" };
-  }
-
-  return { ch: "referral", src: ref.hostname.replace(/^www\./, ""), med: "referral" };
 }
 
 function isTrackablePath(pathname: string): boolean {
@@ -176,21 +167,28 @@ export function middleware(req: NextRequest) {
     if (isDocument && isNavigate && !isPrefetch && isTrackablePath(url.pathname)) {
       const base = classify(url, req.headers.get("referer"), selfHost);
 
-      // Do NOT carry the query string into lp
-      const pathOnly = url.pathname;
-
+      // Build touch (no query string in lp)
       const touch: any = {
         ts: nowIso(),
-        lp: pathOnly,
+        lp: url.pathname,
         src: base.src,
         med: base.med,
         ch: base.ch,
       };
-      if (base.cmp)  touch.cmp  = base.cmp;
-      if (base.term) touch.term = base.term;
-      if (base.cnt)  touch.cnt  = base.cnt;
 
-      // Still capture click IDs from the URL, but not in lp
+      // Attach UTMs as metadata only (do not override src/med/ch)
+      const utm_source   = url.searchParams.get("utm_source");
+      const utm_medium   = url.searchParams.get("utm_medium");
+      const utm_campaign = url.searchParams.get("utm_campaign");
+      const utm_term     = url.searchParams.get("utm_term");
+      const utm_content  = url.searchParams.get("utm_content");
+      if (utm_source)   touch.utm_src  = utm_source;
+      if (utm_medium)   touch.utm_med  = utm_medium;
+      if (utm_campaign) touch.utm_cmp  = utm_campaign;
+      if (utm_term)     touch.utm_term = utm_term;
+      if (utm_content)  touch.utm_cnt  = utm_content;
+
+      // Capture click IDs separately
       for (const k of CLICK_IDS) {
         const v = url.searchParams.get(k);
         if (v) touch[k] = v;
