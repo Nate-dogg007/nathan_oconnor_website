@@ -8,6 +8,7 @@ import Script from "next/script"
 import ConsentBridge from "@/components/consent-bridge"
 import GTMRouteEvents from "@/components/gtm-route-events"
 import { Suspense } from "react"
+import DigifyRouteTracker from "@/components/DigifyRouteTracker"
 
 const inter = Inter({ subsets: ["latin"] })
 
