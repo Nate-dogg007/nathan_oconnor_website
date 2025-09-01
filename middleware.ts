@@ -261,7 +261,6 @@ export function middleware(req: NextRequest) {
     };
 
     // JS-readable attribution (session-only until consent)
-    const persist = !!(consent.analytics || consent.ads);
     res.cookies.set("_digify", toB64Url(digify), {
       httpOnly: false, secure: true, sameSite: "lax", path: "/",
       ...(persist ? { maxAge: 365*24*60*60 } : {})
