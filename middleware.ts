@@ -43,6 +43,17 @@ function fromB64Url<T=any>(s: string): T | null {
     return JSON.parse(json);
   } catch { return null; }
 }
+// Cap per-step time so a long idle tab doesn't explode totals
+const STEP_CAP_MS = 30 * 60 * 1000; // 30 minutes
+
+function clampStepDeltaMs(prevISO?: string, nowISO?: string) {
+  if (!prevISO || !nowISO) return 0;
+  const prev = new Date(prevISO).getTime();
+  const now  = new Date(nowISO).getTime();
+  if (!Number.isFinite(prev) || !Number.isFinite(now) || now <= prev) return 0;
+  return Math.min(now - prev, STEP_CAP_MS);
+}
+
 
 // Read cookie that may be base64url (new) or percent-encoded JSON (legacy)
 function readCookieJson<T=any>(req: NextRequest, name: string): T | null {
@@ -203,6 +214,27 @@ export function middleware(req: NextRequest) {
         touches.push(touch);
         while (touches.length > MAX_TOUCHES) touches.shift();
       }
+      // --- Visitor-level rollups ---
+      const prevTotalMs = (existing.total_time_sec ? existing.total_time_sec * 1000 : 0);
+      const lastTouchTs = touches.length > 1
+        ? touches[touches.length - 2]?.ts
+        : (existing.last_touch_ts as string | undefined);
+      
+      // Add bounded delta since the previous touch
+      const stepDeltaMs = clampStepDeltaMs(lastTouchTs, touches[touches.length - 1]?.ts);
+      const totalTimeMs = prevTotalMs + stepDeltaMs;
+      
+      // Distinct pages seen (lp is path-only, no query)
+      const distinctPages = new Set<string>(touches.map(t => t.lp));
+      const distinctPagesCount = distinctPages.size;
+      const multiPage = distinctPagesCount > 1;
+      
+      // Persist rollups back onto the existing structure
+      existing.total_time_sec = Math.floor(totalTimeMs / 1000);
+      existing.distinct_pages_count = distinctPagesCount;
+      existing.multi_page = multiPage;
+      existing.last_touch_ts = touches[touches.length - 1]?.ts;
+
     }
 
     const digify = {
