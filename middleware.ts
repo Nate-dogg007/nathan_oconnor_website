@@ -56,11 +56,21 @@ function readConsent(req: NextRequest) {
   };
 }
 
+// Map click IDs to platforms (optional refinement)
+function platformFromClickId(url: URL): string | undefined {
+  if (url.searchParams.get("gclid")) return "google";
+  if (url.searchParams.get("gbraid") || url.searchParams.get("wbraid")) return "google";
+  if (url.searchParams.get("msclkid") || url.searchParams.get("uetmsclkid")) return "bing";
+  if (url.searchParams.get("fbclid")) return "facebook";
+  if (url.searchParams.get("ttclid")) return "tiktok";
+  return undefined;
+}
+
 function classify(url: URL, referrer: string | null, selfHost: string) {
   const qp = url.searchParams;
   const clickId = CLICK_IDS.map(k => qp.get(k)).find(Boolean);
 
-  // 1) If UTMs are present → use them
+  // 1) UTMs take priority
   if (qp.get("utm_source")) {
     return {
       ch: "utm",
@@ -72,11 +82,11 @@ function classify(url: URL, referrer: string | null, selfHost: string) {
     };
   }
 
-  // 2) If a click ID is present without UTMs → treat as paid/cpc
+  // 2) Click ID present without UTMs → paid/cpc, set platform source if known
   if (clickId) {
     return {
       ch: "paid",
-      src: "ad_platform",  // you could make this smarter (google/ms/bing/fb) if you like
+      src: platformFromClickId(url) || "ad_platform",
       med: "cpc",
     };
   }
@@ -98,12 +108,10 @@ function classify(url: URL, referrer: string | null, selfHost: string) {
   return { ch: "referral", src: ref.hostname.replace(/^www\./, ""), med: "referral" };
 }
 
-
 function isTrackablePath(pathname: string): boolean {
   if (IGNORE_PATH_PREFIXES.some(p => pathname.startsWith(p))) return false;
   if (ASSET_EXTS.some(ext => pathname.endsWith(ext))) return false;
-  // specifically ignore the consent shim
-  if (pathname === "/consent-shim.js") return false;
+  if (pathname === "/consent-shim.js") return false; // specifically ignore
   return true;
 }
 
@@ -142,64 +150,73 @@ export function middleware(req: NextRequest) {
     });
 
     // --- Attribution (all touches)
-const consent = readConsent(req);
-const persist = !!(consent.analytics || consent.ads);
+    const consent = readConsent(req);
+    const persist = !!(consent.analytics || consent.ads);
 
-const existing = readCookieJson<any>(req, "_digify") || {};
-const touches: any[] = Array.isArray(existing.touches) ? existing.touches.slice() : [];
+    const existing = readCookieJson<any>(req, "_digify") || {};
+    const touches: any[] = Array.isArray(existing.touches) ? existing.touches.slice() : [];
 
-// Only record real top-level navigations (skip prefetch, assets, RSC/data)
-const isDocument    = req.headers.get("sec-fetch-dest") === "document";
-const isNavigate    = req.headers.get("sec-fetch-mode") === "navigate" || req.headers.get("sec-fetch-user") === "?1";
-const isPrefetch    = req.headers.get("purpose") === "prefetch" || req.headers.get("x-middleware-prefetch") === "1";
+    // Only record real top-level navigations (skip prefetch, assets, RSC/data)
+    const isDocument = req.headers.get("sec-fetch-dest") === "document";
+    const isNavigate = req.headers.get("sec-fetch-mode") === "navigate" || req.headers.get("sec-fetch-user") === "?1";
+    const isPrefetch = req.headers.get("purpose") === "prefetch" || req.headers.get("x-middleware-prefetch") === "1";
 
-if (isDocument && isNavigate && !isPrefetch && isTrackablePath(url.pathname)) {
-  const base = classify(url, req.headers.get("referer"), selfHost);
+    if (isDocument && isNavigate && !isPrefetch && isTrackablePath(url.pathname)) {
+      const base = classify(url, req.headers.get("referer"), selfHost);
 
-  // ❌ Do NOT carry the query string into lp
-  const pathOnly = url.pathname;
+      // Do NOT carry the query string into lp
+      const pathOnly = url.pathname;
 
-  const touch: any = {
-    ts: nowIso(),
-    lp: pathOnly,        // ← no query string
-    src: base.src,
-    med: base.med,
-    ch: base.ch,
-  };
-  if (base.cmp)  touch.cmp  = base.cmp;
-  if (base.term) touch.term = base.term;
-  if (base.cnt)  touch.cnt  = base.cnt;
+      const touch: any = {
+        ts: nowIso(),
+        lp: pathOnly,
+        src: base.src,
+        med: base.med,
+        ch: base.ch,
+      };
+      if (base.cmp)  touch.cmp  = base.cmp;
+      if (base.term) touch.term = base.term;
+      if (base.cnt)  touch.cnt  = base.cnt;
 
-  // Still capture click IDs from the URL, but not in lp
-  for (const k of CLICK_IDS) {
-    const v = url.searchParams.get(k);
-    if (v) touch[k] = v;
-  }
+      // Still capture click IDs from the URL, but not in lp
+      for (const k of CLICK_IDS) {
+        const v = url.searchParams.get(k);
+        if (v) touch[k] = v;
+      }
 
-  // Stronger de-dupe: treat immediate redirect/replace as the same touch
-  const last = touches[touches.length - 1];
-  const within2s = last ? (new Date(touch.ts).getTime() - new Date(last.ts).getTime()) < 2000 : false;
-  const sameAttrs = last && last.lp === touch.lp && last.src === touch.src && last.med === touch.med && last.ch === touch.ch;
+      // Stronger de-dupe: treat immediate redirect/replace as the same touch
+      const last = touches[touches.length - 1];
+      const within2s = last ? (new Date(touch.ts).getTime() - new Date(last.ts).getTime()) < 2000 : false;
+      const sameAttrs = last && last.lp === touch.lp && last.src === touch.src && last.med === touch.med && last.ch === touch.ch;
 
-  if (!(sameAttrs && within2s)) {
-    touches.push(touch);
-    while (touches.length > MAX_TOUCHES) touches.shift();
+      if (!(sameAttrs && within2s)) {
+        touches.push(touch);
+        while (touches.length > MAX_TOUCHES) touches.shift();
+      }
+    }
+
+    const digify = {
+      visitor_id: existing.visitor_id || newId(),
+      touches,
+    };
+
+    // JS-readable attribution (session-only until consent)
+    res.cookies.set("_digify", toB64Url(digify), {
+      httpOnly: false, secure: true, sameSite: "lax", path: "/",
+      ...(persist ? { maxAge: 365*24*60*60 } : {})
+    });
+
+    // Optional headers
+    res.headers.set("x-dfy-visitor", digify.visitor_id);
+    res.headers.set("x-dfy-session", sid);
+
+    return res;
+  } catch (err) {
+    console.error("[digify middleware] error:", err);
+    return NextResponse.next();
   }
 }
 
-const digify = {
-  visitor_id: existing.visitor_id || newId(),
-  touches,
-};
-
-// JS-readable attribution (session-only until consent)
-res.cookies.set("_digify", toB64Url(digify), {
-  httpOnly: false, secure: true, sameSite: "lax", path: "/",
-  ...(persist ? { maxAge: 365*24*60*60 } : {})
-});
-
-
 export const config = {
-  // This matcher already skips Next static assets, but we still keep a path filter above for safety.
   matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"],
 };
