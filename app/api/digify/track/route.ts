@@ -1,8 +1,9 @@
+// app/api/digify/track/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
-// helpers duplicated minimally; you can import from middleware if you factor them out
 const VISIT_PAGE_LIMIT = 20;
-const STEP_CAP_MS = 30 * 60 * 1000;
+const STEP_CAP_MS = 30 * 60 * 1000; // 30 minutes
+
 const nowIso = () => new Date().toISOString();
 const toB64Url = (obj: any) => {
   const json = typeof obj === "string" ? obj : JSON.stringify(obj);
@@ -32,25 +33,26 @@ const clampStepDeltaMs = (prevISO?: string, nowISO?: string) => {
 
 export async function POST(req: NextRequest) {
   try {
+    // From DigifyRouteTracker: { pathname, ts? }
     const { pathname, ts } = await req.json().catch(() => ({}));
     if (!pathname || typeof pathname !== "string") {
       return NextResponse.json({ ok: false, error: "missing pathname" }, { status: 400 });
     }
 
-    // read cookies
+    // Read cookies
     const digifyRaw = req.cookies.get("_digify")?.value ?? null;
     const sessionId = req.cookies.get("_digify_sid")?.value ?? null;
     const digify = fromB64Url<any>(digifyRaw) || {};
 
-    // ensure visit context
-    if (digify.visit_sid !== sessionId) {
-      digify.visit_sid = sessionId;
-      digify.visit_pages = [] as string[];
-      digify.visit_total_ms = 0 as number;
-      digify.visit_last_ts = undefined as string | undefined;
+    // Ensure visit context (reset timers if session changed)
+    if (digify._visit_bound_sid !== sessionId) {
+      digify._visit_bound_sid = sessionId;
+      digify.visit_total_ms = 0;
+      digify.visit_last_ts = undefined;
+      digify.visit_pages = [];
     }
 
-    // accumulate bounded time
+    // ---- Update visit time
     const thisTsISO = ts || nowIso();
     if (digify.visit_last_ts) {
       const stepMs = clampStepDeltaMs(digify.visit_last_ts, thisTsISO);
@@ -58,33 +60,33 @@ export async function POST(req: NextRequest) {
     }
     digify.visit_last_ts = thisTsISO;
 
-    // add page if new (ordered unique, bounded)
+    // ---- ⬇️ Put YOUR SNIPPET right here (page list + mirror to last touch) ⬇️
+    // Maintain sequential page list for the visit (allow repeats, cap length)
     const pages: string[] = Array.isArray(digify.visit_pages) ? digify.visit_pages : [];
-    const last = pages[pages.length - 1];
-    if (last !== pathname) {
+    if (pages[pages.length - 1] !== pathname) {
       pages.push(pathname);
-      const seen = new Set<string>();
-      const out: string[] = [];
-      for (const p of pages) if (!seen.has(p)) { out.push(p); seen.add(p); }
-      digify.visit_pages = out.slice(-VISIT_PAGE_LIMIT);
+      if (pages.length > VISIT_PAGE_LIMIT) pages.shift();
     }
+    digify.visit_pages = pages;
 
-    // also update the last touch’s per-visit snapshot (if any touches exist)
+    // Mirror onto last touch so form sees it
     if (Array.isArray(digify.touches) && digify.touches.length) {
       const t = digify.touches[digify.touches.length - 1];
       t.total_time_sec = Math.floor((digify.visit_total_ms || 0) / 1000);
       t.page_paths = digify.visit_pages;
     }
+    // ---- ⬆️ End snippet ⬆️
 
+    // Save back to cookie (session vs persist handled by middleware on next document nav)
     const res = NextResponse.json({ ok: true });
-    // persist cookie with same consent-driven expiry behavior:
-    // we can’t read consent_state here safely; just keep existing cookie's persistence
-    // If your middleware handles persistence each navigation, it will extend appropriately.
     res.cookies.set("_digify", toB64Url(digify), {
-      httpOnly: false, secure: true, sameSite: "lax", path: "/",
+      httpOnly: false,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
     });
     return res;
-  } catch (e) {
+  } catch {
     return NextResponse.json({ ok: false, error: "bad request" }, { status: 400 });
   }
 }
