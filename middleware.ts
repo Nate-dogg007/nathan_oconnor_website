@@ -238,8 +238,16 @@ export function middleware(req: NextRequest) {
     }
 
     const digify = {
-      visitor_id: existing.visitor_id || newId(),
-      touches,
+    visitor_id: existing.visitor_id || newId(),
+    touches,
+    // visitor-level rollups
+    total_time_sec: existing.total_time_sec || 0,
+    distinct_pages_count: existing.distinct_pages_count ?? new Set<string>(touches.map(t => t.lp)).size,
+    multi_page: typeof existing.multi_page === "boolean"
+      ? existing.multi_page
+      : (new Set<string>(touches.map(t => t.lp)).size > 1),
+    // internal pointer for next-step delta calc
+    last_touch_ts: existing.last_touch_ts || touches[touches.length - 1]?.ts,
     };
 
     // JS-readable attribution (session-only until consent)
