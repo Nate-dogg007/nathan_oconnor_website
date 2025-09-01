@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 // ------- Config -------
 const MAX_TOUCHES = 10;
-// (UTM_KEYS kept for reference; not used to classify)
-const UTM_KEYS = ["utm_source","utm_medium","utm_campaign","utm_term","utm_content"] as const;
-// Include all click IDs you want to capture into touches:
 const CLICK_IDS = [
   "gclid","wbraid","gbraid","msclkid","fbclid","ttclid","uetmsclkid",
   "li_fat_id","twclid"
@@ -15,14 +12,12 @@ const SEARCH_ENGINES = [
   /(^|\.)baidu\./i, /(^|\.)yandex\./i, /(^|\.)ecosia\./i, /(^|\.)ask\./i
 ];
 
-// File extensions and paths we DO NOT want to record as touches
 const ASSET_EXTS = [
   ".js",".css",".map",".ico",".png",".jpg",".jpeg",".gif",".webp",".svg",".avif",
   ".woff",".woff2",".ttf",".otf",".eot",".txt",".xml",".json"
 ];
 const IGNORE_PATH_PREFIXES = ["/_next/","/assets/","/static/"];
-
-const VISIT_PAGE_LIMIT = 20; // keep page_paths bounded for cookie size
+const VISIT_PAGE_LIMIT = 20;
 
 // ------- Helpers -------
 const nowIso = () => new Date().toISOString();
@@ -179,35 +174,28 @@ export function middleware(req: NextRequest) {
     if (isDocument && isNavigate && !isPrefetch && isTrackablePath(url.pathname)) {
       const base = classify(url, req.headers.get("referer"), selfHost);
 
-      // --- Visit-level aggregator (per current session)
-      // Reset the visit accumulator if the session id changed or it's the first time
-      if (existing.visit_sid !== sid) {
-        existing.visit_sid = sid;
-        existing.visit_pages = [] as string[];
-        existing.visit_total_ms = 0 as number;
-        existing.visit_last_ts = undefined as string | undefined;
+      // ---- Visit accumulators (time + sequential pages)
+      if (existing._visit_bound_sid !== sid) {
+        existing._visit_bound_sid = sid;
+        existing.visit_total_ms = 0;
+        existing.visit_last_ts = undefined;
+        existing.visit_pages = [];
       }
 
-      // Compute bounded delta since previous page in this visit
       const thisTsISO = nowIso();
       if (existing.visit_last_ts) {
         const stepMs = clampStepDeltaMs(existing.visit_last_ts, thisTsISO);
-        // Cap a single visit to 24h to be safe
+        // cap a single visit total to 24h for safety
         existing.visit_total_ms = Math.min((existing.visit_total_ms || 0) + stepMs, 24 * 60 * 60 * 1000);
       }
       existing.visit_last_ts = thisTsISO;
 
-      // Maintain distinct ordered page list for the visit
       const pages: string[] = Array.isArray(existing.visit_pages) ? existing.visit_pages : [];
-      const lastPage = pages[pages.length - 1];
-      if (lastPage !== url.pathname) {
+      if (pages[pages.length - 1] !== url.pathname) {
         pages.push(url.pathname);
-        // keep unique but preserve order; also bound length
-        const seen = new Set<string>();
-        const deduped: string[] = [];
-        for (const p of pages) if (!seen.has(p)) { deduped.push(p); seen.add(p); }
-        existing.visit_pages = deduped.slice(-VISIT_PAGE_LIMIT);
+        if (pages.length > VISIT_PAGE_LIMIT) pages.shift();
       }
+      existing.visit_pages = pages;
 
       // Build touch (no query string in lp)
       const touch: any = {
@@ -216,12 +204,11 @@ export function middleware(req: NextRequest) {
         src: base.src,
         med: base.med,
         ch: base.ch,
-        // 🟢 Per-visit fields stamped onto each touch
         total_time_sec: Math.floor((existing.visit_total_ms || 0) / 1000),
-        page_paths: existing.visit_pages, // array of paths seen in this visit
+        page_paths: existing.visit_pages, // sequential (includes revisits)
       };
 
-      // Attach UTMs as metadata only (do not override src/med/ch)
+      // UTMs as metadata only
       const utm_source   = url.searchParams.get("utm_source");
       const utm_medium   = url.searchParams.get("utm_medium");
       const utm_campaign = url.searchParams.get("utm_campaign");
@@ -233,7 +220,7 @@ export function middleware(req: NextRequest) {
       if (utm_term)     touch.utm_term = utm_term;
       if (utm_content)  touch.utm_cnt  = utm_content;
 
-      // Capture click IDs separately
+      // Click IDs
       for (const k of CLICK_IDS) {
         const v = url.searchParams.get(k);
         if (v) touch[k] = v;
@@ -247,14 +234,18 @@ export function middleware(req: NextRequest) {
       if (!(sameAttrs && within2s)) {
         touches.push(touch);
         while (touches.length > MAX_TOUCHES) touches.shift();
+      } else {
+        // If deduped, still update last touch’s time/pages snapshot
+        last.total_time_sec = touch.total_time_sec;
+        last.page_paths = touch.page_paths;
       }
     }
 
     const digify = {
       visitor_id: existing.visitor_id || newId(),
       touches,
-      // (Optionally keep some visit markers in the cookie so the next page can continue the visit totals)
-      visit_sid: existing.visit_sid,
+      // internal visit state to keep time/pages accurate across SPA beacons
+      _visit_bound_sid: existing._visit_bound_sid,
       visit_last_ts: existing.visit_last_ts,
       visit_total_ms: existing.visit_total_ms,
       visit_pages: existing.visit_pages,
