@@ -18,6 +18,31 @@ declare global {
   }
 }
 
+function getCookie(name: string) {
+  if (typeof document === "undefined") return null;
+  const value = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(name + "="))
+    ?.split("=")[1];
+  return value ? decodeURIComponent(value) : null;
+}
+
+function getUtmParams() {
+  if (typeof window === "undefined") return {};
+  const url = new URL(window.location.href);
+
+  const keys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"];
+  const out: Record<string, string> = {};
+
+  for (const k of keys) {
+    const v = url.searchParams.get(k);
+    if (v) out[k] = v;
+  }
+
+  return out;
+}
+
+
 async function sha256Hex(input: string) {
   const enc = new TextEncoder().encode(input.trim().toLowerCase())
   const hashBuffer = await crypto.subtle.digest("SHA-256", enc)
@@ -79,9 +104,10 @@ export default function ContactForm({ className }: Props) {
   // 🟢 NEW: build attribution payload (includes visitor_id, session_id, FT/LT UTM & click IDs, + email/phone hashes)
   const attrib = useDigifyAttribution(email, phone)
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (website) return
+
     if (!name || !email || !message) {
       setStatus({ type: "error", text: "Please fill in name, email, and message." })
       try {
@@ -95,11 +121,30 @@ export default function ContactForm({ className }: Props) {
       setStatus({ type: "idle" })
       await pushDLAttempt()
 
-      // 🟢 Include attrib in the payload
+      // ✅ Get HubSpot visitor cookie + UTMs BEFORE fetch
+      const hutk = getCookie("hubspotutk")
+      const utm = getUtmParams()
+
+      // ✅ Single fetch call
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, message, company, phone, attrib }),
+        body: JSON.stringify({
+          name,
+          email,
+          message,
+          company,
+          phone,
+
+          // HubSpot attribution stitching
+          hutk,
+          pageUri: window.location.href,
+          pageName: document.title,
+          ...utm,
+
+          // your existing Digify attribution blob
+          attrib,
+        }),
       })
 
       const data = await res.json().catch(() => ({}))
@@ -150,6 +195,7 @@ export default function ContactForm({ className }: Props) {
       setLoading(false)
     }
   }
+
 
   return (
     <section id="contact-form" className={className}>
