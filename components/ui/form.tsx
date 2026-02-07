@@ -15,7 +15,32 @@ import {
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
-const Form = FormProvider
+/**
+ * NEW: AttributionSync Component
+ * This invisible component syncs your GTM/sGTM data from LocalStorage 
+ * into the React Hook Form state automatically.
+ */
+const AttributionSync = () => {
+  const { setValue } = useFormContext()
+
+  React.useEffect(() => {
+    // Matches the storage key used in your GTM Recorder script
+    const history = localStorage.getItem('noc_attr_history')
+    if (history) {
+      // Sets the value in react-hook-form state for the 'marketing_history' field
+      setValue("marketing_history", history)
+    }
+  }, [setValue])
+
+  return null
+}
+
+const Form = ({ children, ...props }: React.ComponentProps<typeof FormProvider>) => (
+  <FormProvider {...props}>
+    <AttributionSync />
+    {children}
+  </FormProvider>
+)
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
@@ -44,14 +69,14 @@ const FormField = <
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
-  const { getFieldState, formState } = useFormContext()
-
-  const fieldState = getFieldState(fieldContext.name, formState)
+  const context = useFormContext()
 
   if (!fieldContext) {
     throw new Error("useFormField should be used within <FormField>")
   }
 
+  const { getFieldState, formState } = context
+  const fieldState = getFieldState(fieldContext.name, formState)
   const { id } = itemContext
 
   return {
